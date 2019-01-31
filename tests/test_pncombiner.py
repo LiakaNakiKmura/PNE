@@ -31,20 +31,24 @@ from src.transaction.pncombiner import PNCombiner
 from src.csv_io.csvio import CSVReader
 from src.csv_io.csvio import CSVWriter
 from src.calc.pncalc import PNCalc
+from src.interface.common import Transaction
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
     """
     Test for combining phase noise from each small data.
     """
+    def test_interfacre(self):
+        # PNCombiner is command pattern class. (=inherited Transaction).
+        self.assertTrue(issubclass(PNCombiner, Transaction))
     
     def test_class_structure(self):
         """
         Test those classes is called in transaction class.
         """
-        with patch('src.csv_io.csvio.CSVReader') as CSVR, patch(
-                'src.csv_io.csvio.CSVWriter') as CSVW, patch(
-                'src.calc.pncalc.PNCalc') as PNCalc:     
+        with patch('src.csv_io.csvio.CSVReader') as CSVRMock, patch(
+                'src.csv_io.csvio.CSVWriter') as CSVWMock, patch(
+                'src.calc.pncalc.PNCalc') as PNCalcMock:     
             
             imp.reload(src.transaction.pncombiner)
             """
@@ -53,21 +57,15 @@ class TestCombinePN(unittest.TestCase):
             if not reload, classes imported in pncombiner is not patched.
             """
             
+            # Make instance. 
             pnc = PNCombiner()
             pnc.execute()
-            
 
-            
-            CSVR.assert_called()
-            CSVW.assert_called()
-            PNCalc.assert_called()
-            """            
-            instance = MockClass.return_value
-            instance.method.return_value = 'foo'
-            assert Class() is instance
-            assert Class().method() == 'foo'
-            """
-        
+            # Following class is called when above instance is made.
+            CSVRMock.assert_called()
+            CSVWMock.assert_called()
+            PNCalcMock.assert_called()
+
 
 if __name__=='__main__':
     unittest.main()

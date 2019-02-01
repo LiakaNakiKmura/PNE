@@ -32,6 +32,7 @@ from src.csv_io.csvio import CSVReader
 from src.csv_io.csvio import CSVWriter
 from src.calc.pncalc import PNCalc
 from src.interface.common import Transaction
+from src.interface.common import Reader
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -39,8 +40,17 @@ class TestCombinePN(unittest.TestCase):
     Test for combining phase noise from each small data.
     """
     def test_interfacre(self):
+        self._interface_method()
         # PNCombiner is command pattern class. (=inherited Transaction).
         self.assertTrue(issubclass(PNCombiner, Transaction))
+        self.assertTrue(issubclass(CSVReader, Reader))
+        
+    def _interface_method(self):
+        # Test interface has abstract method.
+        class_method_pairs=((Transaction,'execute'),
+                            (Reader,'read'))
+        for cl, mth in class_method_pairs:
+            self.assertTrue(callable(getattr(cl, mth)))
     
     def test_class_structure(self):
         """
@@ -65,7 +75,6 @@ class TestCombinePN(unittest.TestCase):
             CSVRMock.assert_called()
             CSVWMock.assert_called()
             PNCalcMock.assert_called()
-
 
 if __name__=='__main__':
     unittest.main()

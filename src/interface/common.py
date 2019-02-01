@@ -17,3 +17,10 @@ class Transaction(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def execute(self):
         pass
+
+class Reader(metaclass=abc.ABCMeta):
+    
+    @abc.abstractmethod
+    def read(self):
+        pass
+    

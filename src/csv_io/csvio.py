@@ -9,7 +9,9 @@ Created on Thu Jan 31 20:54:03 2019
 
 # 3rd party's module
 
-# Original module  
+# Original module
+import context
+from src.interface.common import Reader
 
-class CSVReader():pass
+class CSVReader(Reader):pass
 class CSVWriter():pass

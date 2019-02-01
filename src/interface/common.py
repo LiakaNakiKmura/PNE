@@ -24,3 +24,8 @@ class Reader(metaclass=abc.ABCMeta):
     def read(self):
         pass
     
+class Writer(metaclass=abc.ABCMeta):
+    
+    @abc.abstractmethod
+    def write(self):
+        pass

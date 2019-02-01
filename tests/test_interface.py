@@ -19,6 +19,7 @@ from test_utility.unittest_util import cls_startstop_msg as add_msg
 
 from src.interface.common import Transaction
 from src.interface.common import Reader
+from src.interface.common import Writer
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -28,7 +29,8 @@ class TestCombinePN(unittest.TestCase):
     def test_interface_method(self):
         # Test interface has abstract method.
         class_method_pairs=((Transaction,'execute'),
-                            (Reader,'read'))
+                            (Reader,'read'),
+                            (Writer,'write'))
         for cl, mth in class_method_pairs:
             self.assertTrue(callable(getattr(cl, mth)))
 

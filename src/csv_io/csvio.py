@@ -11,7 +11,7 @@ Created on Thu Jan 31 20:54:03 2019
 
 # Original module
 import context
-from src.interface.common import Reader
+from src.interface.common import (Reader, Writer)
 
 class CSVReader(Reader):pass
-class CSVWriter():pass
+class CSVWriter(Writer):pass

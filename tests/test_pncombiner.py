@@ -28,8 +28,7 @@ from src.transaction.pncombiner import PNCombiner
 from src.csv_io.csvio import CSVReader
 from src.csv_io.csvio import CSVWriter
 from src.calc.pncalc import PNCalc
-from src.interface.common import Transaction
-from src.interface.common import Reader
+from src.interface.common import (Transaction, Reader, Writer)
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -38,9 +37,12 @@ class TestCombinePN(unittest.TestCase):
     """
     def test_interfacre(self):
         # Check using class has interface.
-        self.assertTrue(issubclass(PNCombiner, Transaction))
-        self.assertTrue(issubclass(CSVReader, Reader))
-    
+        sub_par_class_pairs = ((PNCombiner, Transaction),
+                               (CSVReader, Reader),
+                               (CSVWriter, Writer)
+                               )
+        for subc, parc in sub_par_class_pairs:
+            self.assertTrue(issubclass(subc, parc))    
     
     def test_class_structure(self):
         """

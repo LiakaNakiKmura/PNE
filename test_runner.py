@@ -5,7 +5,7 @@ This is for CI testing.
 Call all tests in test folder which name is stated with test_
 If this module is not __main__, do nothing
 
-@author: LiAkaNaKiKMura
+@author: LiNaK
 """
 
 if __name__ == '__main__':

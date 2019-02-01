@@ -12,13 +12,10 @@ because import
 
 # Standard module
 import unittest
-import imp
 from unittest.mock import patch
+import imp
 
 # 3rd party's module
-from numpy.testing import (assert_array_equal, assert_array_almost_equal, 
-                           assert_almost_equal)
-from numpy.random import randint
 
 # Original module
 from context import src # path setting
@@ -40,17 +37,10 @@ class TestCombinePN(unittest.TestCase):
     Test for combining phase noise from each small data.
     """
     def test_interfacre(self):
-        self._interface_method()
-        # PNCombiner is command pattern class. (=inherited Transaction).
+        # Check using class has interface.
         self.assertTrue(issubclass(PNCombiner, Transaction))
         self.assertTrue(issubclass(CSVReader, Reader))
-        
-    def _interface_method(self):
-        # Test interface has abstract method.
-        class_method_pairs=((Transaction,'execute'),
-                            (Reader,'read'))
-        for cl, mth in class_method_pairs:
-            self.assertTrue(callable(getattr(cl, mth)))
+    
     
     def test_class_structure(self):
         """

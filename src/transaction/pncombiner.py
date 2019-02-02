@@ -16,18 +16,18 @@ from src.interface.calc_data import (PN_TF_Calc)
 
 class PNCombiner(Transaction):
     def __init__(self):
-        reader = DataReader()
-        writer = DataWriter()
+        reader = PNDataReader()
+        writer = PNDataWriter()
         pnc = PNCalc()
     
     def execute(self):
         pass
 
-class DataReader(Reader):
+class PNDataReader(Reader):
     def read(self):
         pass
 
-class DataWriter(Writer):
+class PNDataWriter(Writer):
     def read(self):
         pass
     

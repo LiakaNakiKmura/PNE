@@ -25,9 +25,12 @@ from test_utility.unittest_util import cls_startstop_msg as add_msg
 from src.transaction.pncombiner import PNCombiner
 
 # Support Class
-from src.csv_io.csvio import CSVReader
-from src.csv_io.csvio import CSVWriter
-from src.calc.pncalc import PNCalc
+from src.transaction.pncombiner import DataReader
+from src.transaction.pncombiner import DataWriter
+
+#from src.calc.pncalc import PNCalc
+from src.transaction.pncombiner import PNCalc
+
 from src.interface.common import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
 
@@ -39,8 +42,8 @@ class TestCombinePN(unittest.TestCase):
     def test_interfacre(self):
         # Check using class has interface.
         sub_par_class_pairs = ((PNCombiner, Transaction),
-                               (CSVReader, Reader),
-                               (CSVWriter, Writer),
+                               (DataReader, Reader),
+                               (DataWriter, Writer),
                                (PNCalc, PN_TF_Calc)
                                )
         for subc, parc in sub_par_class_pairs:
@@ -50,25 +53,19 @@ class TestCombinePN(unittest.TestCase):
         """
         Test those classes is called in transaction class.
         """
-        with patch('src.csv_io.csvio.CSVReader') as CSVRMock, patch(
-                'src.csv_io.csvio.CSVWriter') as CSVWMock, patch(
-                'src.calc.pncalc.PNCalc') as PNCalcMock:     
-            
-            imp.reload(src.transaction.pncombiner)
-            """
-            pncombiner MUST be reloaded because patch class is called when 
-            pncombiner module is called.
-            if not reload, classes imported in pncombiner is not patched.
-            """
+
+        with patch('src.transaction.pncombiner.DataReader') as Reader_Mock,\
+        patch('src.transaction.pncombiner.DataWriter') as Wruter_Mock,\
+        patch('src.transaction.pncombiner.PNCalc') as PNCalc_Mock:
             
             # Make instance. 
             pnc = PNCombiner()
             pnc.execute()
-
+            
             # Following class is called when above instance is made.
-            CSVRMock.assert_called()
-            CSVWMock.assert_called()
-            PNCalcMock.assert_called()
+            Reader_Mock.assert_called()
+            Wruter_Mock.assert_called()
+            PNCalc_Mock.assert_called()
 
 if __name__=='__main__':
     unittest.main()

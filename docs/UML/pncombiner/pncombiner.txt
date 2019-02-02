@@ -1,0 +1,45 @@
+@startuml
+
+abstract class Transaction{
+    +excute()
+}
+
+class PNCombiner
+PNCombiner -ri-|> Transaction
+
+abstract class Writer{
+    +write()
+}
+abstract class Reader{
+    +read()
+}
+abstract class PN_TF_Calc{
+    +calc()
+}
+
+PNCombiner --> Writer
+PNCombiner --> Reader
+PNCombiner --> PN_TF_Calc
+
+class PNDataWriter
+class PNDataReader
+class PNcalc
+
+PNDataWriter --up|> Writer
+PNDataReader --up|> Reader
+PNcalc --up|> PN_TF_Calc
+
+class PNDataBase{
+    <<singleton>>
+    +set_noise(name, freq_nosie_pairas, transfer_func)
+    +get_noise(name)
+    +set_open-loop(open_loop)
+    +get_noise()
+    +set_total_pn(phase_noise)
+    +get_total_pn()
+}
+PNDataWriter -ri> PNDataBase
+PNDataReader -ri> PNDataBase
+PNcalc -ri> PNDataBase
+
+@enduml

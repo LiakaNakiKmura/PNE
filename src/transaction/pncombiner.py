@@ -32,11 +32,24 @@ class PNDataWriter(Writer):
         pass
     
 class PNCalc(PN_TF_Calc):
-    def set_open_loop(self, openloop):
+    def calc(self):
+        pass
+
+class PNDataBase():
+    def set_noise(self):
         pass
     
-    def set_noise(self, noise):
+    def get_noise(self):
         pass
     
-    def get_total_noise(self, noise):
+    def set_transfer_func(self):
+        pass
+    
+    def get_transfer_func(self):
+        pass
+    
+    def set_pn(self):
+        pass
+    
+    def get_pn(self):
         pass

@@ -25,11 +25,8 @@ from test_utility.unittest_util import cls_startstop_msg as add_msg
 from src.transaction.pncombiner import PNCombiner
 
 # Support Class
-from src.transaction.pncombiner import PNDataReader
-from src.transaction.pncombiner import PNDataWriter
-
-#from src.calc.pncalc import PNCalc
-from src.transaction.pncombiner import PNCalc
+from src.transaction.pncombiner import (PNDataReader, PNDataWriter, PNCalc,
+                                        PNDataBase)
 
 from src.interface.common import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
@@ -66,6 +63,13 @@ class TestCombinePN(unittest.TestCase):
             Reader_Mock.assert_called()
             Wruter_Mock.assert_called()
             PNCalc_Mock.assert_called()
+            
+    def test_database_method(self):
+        # Test interface has abstract method.
+        method_names=('set_noise','get_noise', 'set_transfer_func',
+                      'get_transfer_func', 'set_pn', 'get_pn')
+        for  mth in method_names:
+            self.assertTrue(callable(getattr(PNDataBase, mth)))
 
 
 class TestCombineRead(unittest.TestCase):
@@ -74,6 +78,7 @@ class TestCombineRead(unittest.TestCase):
     noise data.
     """
     def test_readdata(self):
+        
         pass
     
 

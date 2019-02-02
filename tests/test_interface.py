@@ -30,9 +30,7 @@ class TestCombinePN(unittest.TestCase):
         class_method_pairs=((Transaction,'execute'),
                             (Reader,'read'),
                             (Writer,'write'),
-                            (PN_TF_Calc,'set_open_loop'),
-                            (PN_TF_Calc,'set_noise'),
-                            (PN_TF_Calc,'get_total_noise')
+                            (PN_TF_Calc,'calc')                         
                             )
         for cl, mth in class_method_pairs:
             self.assertTrue(callable(getattr(cl, mth)))

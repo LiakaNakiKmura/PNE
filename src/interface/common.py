@@ -21,11 +21,11 @@ class Transaction(metaclass=abc.ABCMeta):
 class Reader(metaclass=abc.ABCMeta):
     
     @abc.abstractmethod
-    def read(self):
+    def read(self, message):
         pass
     
 class Writer(metaclass=abc.ABCMeta):
     
     @abc.abstractmethod
-    def write(self):
+    def write(self, message, data):
         pass

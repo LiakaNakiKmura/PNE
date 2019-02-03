@@ -28,7 +28,7 @@ class PNDataReader(Reader):
         pass
 
 class PNDataWriter(Writer):
-    def read(self):
+    def write(self):
         pass
     
 class PNCalc(PN_TF_Calc):

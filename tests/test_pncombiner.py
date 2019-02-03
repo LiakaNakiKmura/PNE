@@ -21,15 +21,15 @@ from context import src # path setting
 from test_utility.unittest_util import cls_startstop_msg as add_msg
 
 # Target class
-#from src.transaction.pncombiner import PNCombiner
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
                                         PNCalc, PNDataBase)
 
-#interface
+# interface
 from src.interface.common import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
 
-
+# tool class
+from src.dataio.csvio import (CSVIO)
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -78,7 +78,8 @@ class TestCombineRead(unittest.TestCase):
     noise data.
     """
     def test_readdata(self):
-        
+        with patch('src.dataio.csvio.CSVIO.read_data') as read_data_mock:
+            pass
         pass
     
 

@@ -15,6 +15,8 @@ import unittest
 from unittest.mock import patch
 
 # 3rd party's module
+from pandas import Series
+from pandas.testing import assert_series_equal
 
 # Original module
 from context import src # path setting
@@ -23,7 +25,7 @@ from test_utility import Signletone_test_base
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
-                                        PNCalc, PNDataBase)
+                                        PNCalc, PNDataBase, PNPrmtrMng)
 
 # interface
 from src.interface.common import (Transaction, Reader, Writer)
@@ -73,6 +75,20 @@ class TestCombinePN(unittest.TestCase):
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
     
+    def test_parameter_exist(self):
+        """
+        Parameter class testing.
+        Parameter is property, is string that is greater than 0 length and 
+        cannot be changed.
+        """
+        pnpm = PNPrmtrMng()
+        attrnames = ['ref']
+        for n in attrnames:
+            prmtr = getattr(pnpm,n)
+            self.assertTrue(isinstance(prmtr, str))
+            self.assertTrue(0<len(prmtr))
+            self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
+            # Raise error if property value is changed.
 
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     """
@@ -87,21 +103,51 @@ class TestCombineRead(unittest.TestCase):
     noise data.
     """
     
+    _reading_messages = ["Please input reference phase noise"]
+    # Message of calling to read the data.
+    
     def setUp(self):
         self.pndb = PNDataBase()
-        pass
     
     def tearDown(self):
         del self.pndb
-        # Kill PNDataBase instance because pndatabase is singleton.
+        """
+        Kill PNDataBase instance to reflesh data on each test because 
+        pndatabase is singleton.
+        """
+    def _make_dummy_inputs(self):
+        """
+        Make dummy data which match the message of reader is passed.
+        """
+        self._msg_and_input =[]
+        for i, msg in enumerate(self._reading_messages):
+            self._msg_and_input.append(
+                    [msg, Series([[4*1,4*i+1],[4*i+2,4*i+3]])]
+                    )
+            
+    def _input_side_effect_generator(self):
+        """
+        Generate the side_effect function which return the value match input
+        message of reader.
+        """
+        
+        self._make_dummy_inputs()
+        def _side_effect(message):
+            for msg, data in self._msg_and_input:
+                if message == msg:
+                    print((msg, data))
+                    return data
+        return _side_effect
     
     def test_readdata(self):
         self.assertTrue(issubclass(CSVIO, Reader))
         with patch('src.dataio.csvio.CSVIO.read') as read_data_mock:
-            pass
-        pass
+            read_data_mock.side_effect =self._input_side_effect_generator()
+            pndata = PNDataReader()
+            pndata.read()
+            #self.pndb.get_noise()
 
-
+            
 
 if __name__=='__main__':
     unittest.main()

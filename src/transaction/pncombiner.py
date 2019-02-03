@@ -55,3 +55,9 @@ class PNDataBase():
     
     def get_pn(self):
         pass
+
+class PNPrmtrMng():
+    
+    @property
+    def ref(self):
+        return 'reference'

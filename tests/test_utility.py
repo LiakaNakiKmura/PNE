@@ -27,6 +27,12 @@ class Signletone_test_base():
     """
     
     _cls = None # target class defined inherated test class.
+    
+    def setUp(self):
+        self._inst = self._cls()
+    
+    def tearDown(self):
+        del self._inst
 
     def test_some_cls(self):
         """
@@ -45,6 +51,15 @@ class Signletone_test_base():
         self.assertFalse(isinstance(a, Dummy))
         self.assertEqual(a, b)
         self.assertNotEqual(a, d)
+        
+    def delete_cls(self):
+        """
+        If one instance of singleton is deleted, other instance will be deleted.
+        """
+        a = self._cls()
+        b = self._cls()
+        del a
+        self.assertRaises(NameError, b)
 
 @singleton_decorator
 class Mock_cls():pass # mock class for testing singleton decorator.

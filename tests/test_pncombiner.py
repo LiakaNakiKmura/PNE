@@ -37,6 +37,7 @@ class TestCombinePN(unittest.TestCase):
     """
     Test for combining phase noise from each small data.
     """
+    
     def test_interfacre(self):
         # Check using class has interface.
         sub_par_class_pairs = ((PNCombiner, Transaction),
@@ -74,6 +75,9 @@ class TestCombinePN(unittest.TestCase):
     
 
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
+    """
+    Test PNDataBase is singleton.
+    """
     _cls = PNDataBase
 
 
@@ -84,7 +88,12 @@ class TestCombineRead(unittest.TestCase):
     """
     
     def setUp(self):
+        self.pndb = PNDataBase()
         pass
+    
+    def tearDown(self):
+        del self.pndb
+        # Kill PNDataBase instance because pndatabase is singleton.
     
     def test_readdata(self):
         self.assertTrue(issubclass(CSVIO, Reader))

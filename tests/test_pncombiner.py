@@ -13,7 +13,6 @@ because import
 # Standard module
 import unittest
 from unittest.mock import patch
-import imp
 
 # 3rd party's module
 
@@ -22,14 +21,15 @@ from context import src # path setting
 from test_utility.unittest_util import cls_startstop_msg as add_msg
 
 # Target class
-from src.transaction.pncombiner import PNCombiner
+#from src.transaction.pncombiner import PNCombiner
+from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
+                                        PNCalc, PNDataBase)
 
-# Support Class
-from src.transaction.pncombiner import (PNDataReader, PNDataWriter, PNCalc,
-                                        PNDataBase)
-
+#interface
 from src.interface.common import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
+
+
 
 @add_msg
 class TestCombinePN(unittest.TestCase):

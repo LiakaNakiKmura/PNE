@@ -16,9 +16,9 @@ from src.interface.calc_data import (PN_TF_Calc)
 
 class PNCombiner(Transaction):
     def __init__(self):
-        reader = PNDataReader()
-        writer = PNDataWriter()
-        pnc = PNCalc()
+        self._reader = PNDataReader()
+        self._writer = PNDataWriter()
+        self._pnc = PNCalc()
     
     def execute(self):
         pass

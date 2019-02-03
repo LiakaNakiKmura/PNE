@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 # Original module  
 from context import src # path setting
-from test_utility.unittest_util import cls_startstop_msg as add_msg
+from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 from src.interface.common import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
@@ -30,7 +30,7 @@ class TestCombinePN(unittest.TestCase):
         class_method_pairs=((Transaction,'execute'),
                             (Reader,'read'),
                             (Writer,'write'),
-                            (PN_TF_Calc,'calc')                         
+                            (PN_TF_Calc,'calc')                   
                             )
         for cl, mth in class_method_pairs:
             self.assertTrue(callable(getattr(cl, mth)))

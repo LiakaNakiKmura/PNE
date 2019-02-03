@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 # Original module
 from context import src # path setting
-from test_utility.unittest_util import cls_startstop_msg as add_msg
+from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
@@ -77,11 +77,17 @@ class TestCombineRead(unittest.TestCase):
     This is the test for reading data of transfer function, phasenoise dadta,
     noise data.
     """
-    def test_readdata(self):
-        with patch('src.dataio.csvio.CSVIO.read_data') as read_data_mock:
-            pass
+    
+    def setUp(self):
         pass
     
+    def test_readdata(self):
+        self.assertTrue(issubclass(CSVIO, Reader))
+        with patch('src.dataio.csvio.CSVIO.read') as read_data_mock:
+            pass
+        pass
+
+
 
 if __name__=='__main__':
     unittest.main()

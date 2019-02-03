@@ -10,7 +10,12 @@ Created on Sun Feb  3 12:34:50 2019
 # 3rd party's module
 
 # Original module  
+from context import src # path setting
 
-class CSVIO():
-    def read_data(self):
+# interface
+from src.interface.common import (Reader, )
+
+class CSVIO(Reader):
+    def read(self, message):
         pass
+    

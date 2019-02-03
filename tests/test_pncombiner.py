@@ -19,6 +19,7 @@ from unittest.mock import patch
 # Original module
 from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
+from test_utility import Signletone_test_base
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
@@ -70,6 +71,10 @@ class TestCombinePN(unittest.TestCase):
                       'get_transfer_func', 'set_pn', 'get_pn')
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
+    
+
+class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
+    _cls = PNDataBase
 
 
 class TestCombineRead(unittest.TestCase):

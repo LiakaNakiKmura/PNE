@@ -13,6 +13,7 @@ Created on Thu Jan 31 20:43:04 2019
 from src.interface.common import Transaction
 from src.interface.common import (Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
+from src.utility.utility import singleton_decorator
 
 class PNCombiner(Transaction):
     def __init__(self):
@@ -35,6 +36,7 @@ class PNCalc(PN_TF_Calc):
     def calc(self):
         pass
 
+@singleton_decorator
 class PNDataBase():
     def set_noise(self):
         pass

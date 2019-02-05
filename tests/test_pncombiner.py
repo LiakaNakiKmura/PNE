@@ -15,8 +15,9 @@ import unittest
 from unittest.mock import patch
 
 # 3rd party's module
-from pandas import Series
-from pandas.testing import assert_series_equal
+from pandas import Series, DataFrame
+from pandas.testing import assert_series_equal, assert_frame_equal
+import numpy as np
 
 # Original module
 from context import src # path setting
@@ -74,6 +75,7 @@ class TestCombinePN(unittest.TestCase):
                       'get_transfer_func', 'set_pn', 'get_pn')
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
+        
     
     def test_parameter_exist(self):
         """
@@ -95,17 +97,8 @@ class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     Test PNDataBase is singleton.
     """
     _cls = PNDataBase
-
-
-class TestCombineRead(unittest.TestCase):
-    """
-    This is the test for reading data of transfer function, phasenoise dadta,
-    noise data.
-    """
     
-    _reading_messages = ["Please input reference phase noise"]
-    # Message of calling to read the data.
-    
+class Test_database_detail(unittest.TestCase):
     def setUp(self):
         self.pndb = PNDataBase()
     
@@ -115,15 +108,60 @@ class TestCombineRead(unittest.TestCase):
         Kill PNDataBase instance to reflesh data on each test because 
         pndatabase is singleton.
         """
+    def test_database_inputput(self):
+        inputdatas = {'noise0':DataFrame(np.zeros((5,2))),
+                      'noise1':DataFrame(np.ones((5,2))),
+                      'noise2':DataFrame([[],[]]),
+                  }
+        addv = 2 #add value
+        
+        for n, d in inputdatas.items():
+            self.pndb.set_noise(n,d)
+        
+        for n, d in inputdatas.items():
+            assert_frame_equal(self.pndb.get_noise(n), d)
+            #check the input data = output data
+            
+            self.pndb.set_noise(n,d+addv)
+            #rewrite the data
+        
+        for n, d in inputdatas.items():
+            assert_frame_equal(self.pndb.get_noise(n), d+addv)
+            # check the rewrite data
+
+class TestCombineRead(unittest.TestCase):
+    """
+    This is the test for reading data of transfer function, phasenoise dadta,
+    noise data.
+    """
+    
+    #_reading_messages = ["Please input reference phase noise."]
+    # Message of calling to read the data.
+    
+    def setUp(self):
+        self.pndb = PNDataBase()
+        self.pnpm = PNPrmtrMng()
+        self.ask_word()
+    
+    def tearDown(self):
+        del self.pndb
+        """
+        Kill PNDataBase instance to reflesh data on each test because 
+        pndatabase is singleton.
+        """
+        
+    def ask_word(self):
+        self._reading_messages={self.pnpm:"Please input reference "\
+                                "phase noise."}
+    # Message of calling to read the data.
+        
     def _make_dummy_inputs(self):
         """
         Make dummy data which match the message of reader is passed.
         """
-        self._msg_and_input =[]
+        self._msg_and_input ={}
         for i, msg in enumerate(self._reading_messages):
-            self._msg_and_input.append(
-                    [msg, Series([[4*1,4*i+1],[4*i+2,4*i+3]])]
-                    )
+            self._msg_and_input[msg] = Series([[4*1,4*i+1],[4*i+2,4*i+3]])
             
     def _input_side_effect_generator(self):
         """
@@ -139,14 +177,18 @@ class TestCombineRead(unittest.TestCase):
                     return data
         return _side_effect
     
+    
     def test_readdata(self):
         self.assertTrue(issubclass(CSVIO, Reader))
         with patch('src.dataio.csvio.CSVIO.read') as read_data_mock:
             read_data_mock.side_effect =self._input_side_effect_generator()
             pndata = PNDataReader()
             pndata.read()
-            #self.pndb.get_noise()
-
+            """
+            self.assertEqual(self.pndb.get_noise(self.pnpm.ref), 
+                             self._msg_and_input[
+                                     self._reading_messages[self.pnpm.ref]])
+            """
             
 
 if __name__=='__main__':

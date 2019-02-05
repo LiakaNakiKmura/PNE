@@ -38,11 +38,14 @@ class PNCalc(PN_TF_Calc):
 
 @singleton_decorator
 class PNDataBase():
-    def set_noise(self):
-        pass
+    def __init__(self):
+        self._noise = {}
     
-    def get_noise(self):
-        pass
+    def set_noise(self, name, data):
+        self._noise[name] = data
+    
+    def get_noise(self, name):
+        return self._noise[name]
     
     def set_transfer_func(self):
         pass

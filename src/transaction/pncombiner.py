@@ -10,10 +10,16 @@ Created on Thu Jan 31 20:43:04 2019
 # 3rd party's module
 
 # Original module  
+
+#interfaces
 from src.interface.common import Transaction
 from src.interface.common import (Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
+
+#utilities
 from src.utility.utility import singleton_decorator
+from src.dataio.csvio import CSVIO
+
 
 class PNCombiner(Transaction):
     def __init__(self):
@@ -25,8 +31,18 @@ class PNCombiner(Transaction):
         pass
 
 class PNDataReader(Reader):
+    def __init__(self):
+        self.csvio = CSVIO()
+        self.pnpm = PNPrmtrMng()
+        self.pndb = PNDataBase()
+        self._make_msg()
+    
+    def _make_msg(self):
+        self._msg ={self.pnpm.ref:"Please input reference phase noise."}
+        
     def read(self):
-        pass
+        data = self.csvio.read(self._msg[self.pnpm.ref])
+        self.pndb.set_noise(self.pnpm.ref, data)
 
 class PNDataWriter(Writer):
     def write(self):

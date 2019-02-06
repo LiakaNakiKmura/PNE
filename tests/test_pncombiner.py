@@ -92,12 +92,14 @@ class TestCombinePN(unittest.TestCase):
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
 
+@add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     """
     Test PNDataBase is singleton.
     """
     _cls = PNDataBase
-    
+
+@add_msg  
 class Test_database_detail(unittest.TestCase):
     def setUp(self):
         self.pndb = PNDataBase()
@@ -129,6 +131,7 @@ class Test_database_detail(unittest.TestCase):
             assert_frame_equal(self.pndb.get_noise(n), d+addv)
             # check the rewrite data
 
+@add_msg
 class TestCombineRead(unittest.TestCase):
     """
     This is the test for reading data of transfer function, phasenoise dadta,
@@ -151,7 +154,7 @@ class TestCombineRead(unittest.TestCase):
         """
         
     def ask_word(self):
-        self._reading_messages={self.pnpm:"Please input reference "\
+        self._reading_messages={self.pnpm.ref:"Please input reference "\
                                 "phase noise."}
     # Message of calling to read the data.
         
@@ -160,8 +163,8 @@ class TestCombineRead(unittest.TestCase):
         Make dummy data which match the message of reader is passed.
         """
         self._msg_and_input ={}
-        for i, msg in enumerate(self._reading_messages):
-            self._msg_and_input[msg] = Series([[4*1,4*i+1],[4*i+2,4*i+3]])
+        for i, msg in enumerate(self._reading_messages.values()):
+            self._msg_and_input[msg] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
             
     def _input_side_effect_generator(self):
         """
@@ -171,9 +174,8 @@ class TestCombineRead(unittest.TestCase):
         
         self._make_dummy_inputs()
         def _side_effect(message):
-            for msg, data in self._msg_and_input:
+            for msg, data in self._msg_and_input.items():
                 if message == msg:
-                    print((msg, data))
                     return data
         return _side_effect
     
@@ -184,11 +186,9 @@ class TestCombineRead(unittest.TestCase):
             read_data_mock.side_effect =self._input_side_effect_generator()
             pndata = PNDataReader()
             pndata.read()
-            """
-            self.assertEqual(self.pndb.get_noise(self.pnpm.ref), 
+            assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])
-            """
             
 
 if __name__=='__main__':

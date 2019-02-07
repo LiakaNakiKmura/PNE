@@ -44,8 +44,9 @@ class TestCombinePN(unittest.TestCase):
     def test_interfacre(self):
         # Check using class has interface.
         sub_par_class_pairs = ((PNCombiner, Transaction),
-                               (PNDataReader, Reader),
-                               (PNDataWriter, Writer),
+                               (PNDataReader, Transaction),
+                               #(PNDataWriter, Writer),
+                               (PNDataWriter, Transaction),
                                (PNCalc, PN_TF_Calc)
                                )
         for subc, parc in sub_par_class_pairs:
@@ -185,7 +186,7 @@ class TestCombineRead(unittest.TestCase):
         with patch('src.dataio.csvio.CSVIO.read') as read_data_mock:
             read_data_mock.side_effect =self._input_side_effect_generator()
             pndata = PNDataReader()
-            pndata.read()
+            pndata.execute()
             assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])

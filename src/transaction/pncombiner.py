@@ -30,7 +30,7 @@ class PNCombiner(Transaction):
     def execute(self):
         pass
 
-class PNDataReader(Reader):
+class PNDataReader(Transaction):
     def __init__(self):
         self.csvio = CSVIO()
         self.pnpm = PNPrmtrMng()
@@ -39,13 +39,13 @@ class PNDataReader(Reader):
     
     def _make_msg(self):
         self._msg ={self.pnpm.ref:"Please input reference phase noise."}
-        
-    def read(self):
+    
+    def execute(self):
         data = self.csvio.read(self._msg[self.pnpm.ref])
         self.pndb.set_noise(self.pnpm.ref, data)
 
-class PNDataWriter(Writer):
-    def write(self):
+class PNDataWriter(Transaction):
+    def execute(self):
         pass
     
 class PNCalc(PN_TF_Calc):
@@ -76,7 +76,6 @@ class PNDataBase():
         pass
 
 class PNPrmtrMng():
-    
     @property
     def ref(self):
         return 'reference'

@@ -20,6 +20,8 @@ from pandas.testing import assert_series_equal, assert_frame_equal
 import numpy as np
 
 # Original module
+
+# utlities.
 from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 from test_utility import (Signletone_test_base, Inheration_test_base)
@@ -29,12 +31,13 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         PNCalc, PNDataBase, PNPrmtrMng)
 
 # interface
-from src.interface.common import (Transaction, Reader, Writer)
+from src.interface.intfc_com import (Transaction, Reader, Writer)
 from src.interface.calc_data import (PN_TF_Calc)
 
 # tool class
 from src.dataio.csvio import (CSVIO)
 
+@add_msg
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs = ((PNCombiner, Transaction),

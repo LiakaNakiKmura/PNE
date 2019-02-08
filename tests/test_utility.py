@@ -12,8 +12,10 @@ import unittest
 
 # Original module  
 from context import src # path setting
+
 # Target class
 from src.utility.utility import singleton_decorator
+from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 
 class Signletone_test_base():
@@ -64,6 +66,7 @@ class Signletone_test_base():
 @singleton_decorator
 class Mock_cls():pass # mock class for testing singleton decorator.
 
+@add_msg
 class Test_singleton_decorator(Signletone_test_base, unittest.TestCase):
     """
     Test the singleton decorator.
@@ -88,6 +91,7 @@ class Dummy2(Dummy1):pass
 class Dummy3():pass
 class Dummy4(Dummy3, Dummy1):pass
 
+@add_msg
 class Test_inheration(Inheration_test_base,unittest.TestCase):
     _sub_sup_class_pairs = ((Dummy2,Dummy1),
                             (Dummy4,Dummy3),

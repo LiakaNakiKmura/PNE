@@ -13,7 +13,7 @@ Created on Sun Feb  3 12:34:50 2019
 from context import src # path setting
 
 # interface
-from src.interface.common import (Reader, )
+from src.interface.intfc_com import (Reader, )
 
 class CSVIO(Reader):
     def read(self, message):

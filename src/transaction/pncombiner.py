@@ -12,8 +12,7 @@ Created on Thu Jan 31 20:43:04 2019
 # Original module  
 
 #interfaces
-from src.interface.common import Transaction
-from src.interface.common import (Reader, Writer)
+from src.interface.intfc_com import Transaction
 from src.interface.calc_data import (PN_TF_Calc)
 
 #utilities

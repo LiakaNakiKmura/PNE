@@ -22,7 +22,7 @@ import numpy as np
 # Original module
 from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
-from test_utility import Signletone_test_base
+from test_utility import (Signletone_test_base, Inheration_test_base)
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
@@ -35,22 +35,19 @@ from src.interface.calc_data import (PN_TF_Calc)
 # tool class
 from src.dataio.csvio import (CSVIO)
 
-@add_msg
-class TestCombinePN(unittest.TestCase):
-    """
-    Test for combining phase noise from each small data.
-    """
-    
-    def test_interfacre(self):
-        # Check using class has interface.
-        sub_par_class_pairs = ((PNCombiner, Transaction),
+class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
+    # Test inheration of interfaces.
+    _sub_sup_class_pairs = ((PNCombiner, Transaction),
                                (PNDataReader, Transaction),
-                               #(PNDataWriter, Writer),
                                (PNDataWriter, Transaction),
                                (PNCalc, PN_TF_Calc)
                                )
-        for subc, parc in sub_par_class_pairs:
-            self.assertTrue(issubclass(subc, parc))    
+
+@add_msg
+class TestCombinePN(unittest.TestCase):
+    """
+    Test for combining phase noise from each component data.
+    """
     
     def test_class_structure(self):
         """
@@ -58,7 +55,7 @@ class TestCombinePN(unittest.TestCase):
         """
 
         with patch('src.transaction.pncombiner.PNDataReader') as Reader_Mock,\
-        patch('src.transaction.pncombiner.PNDataWriter') as Wruter_Mock,\
+        patch('src.transaction.pncombiner.PNDataWriter') as Writer_Mock,\
         patch('src.transaction.pncombiner.PNCalc') as PNCalc_Mock:
             
             # Make instance. 
@@ -67,7 +64,7 @@ class TestCombinePN(unittest.TestCase):
             
             # Following class is called when above instance is made.
             Reader_Mock.assert_called()
-            Wruter_Mock.assert_called()
+            Writer_Mock.assert_called()
             PNCalc_Mock.assert_called()
             
     def test_database_method(self):

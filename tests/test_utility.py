@@ -70,6 +70,29 @@ class Test_singleton_decorator(Signletone_test_base, unittest.TestCase):
     Mock class is defined for singleton
     """
     _cls = Mock_cls    
+
+class Inheration_test_base():
+    """
+    Test for iheration of classes.
+    _sub_par_class_pairs is set as ((sub class1, super class1), (subclass2,
+    super class2),...)
+    """
+    _sub_sup_class_pairs = ((None,None))
+    def test_interfacre(self):
+        # Check using class has interface.
+        for subc, supc in self._sub_sup_class_pairs:
+            self.assertTrue(issubclass(subc, supc))
+
+class Dummy1():pass
+class Dummy2(Dummy1):pass
+class Dummy3():pass
+class Dummy4(Dummy3, Dummy1):pass
+
+class Test_inheration(Inheration_test_base,unittest.TestCase):
+    _sub_sup_class_pairs = ((Dummy2,Dummy1),
+                            (Dummy4,Dummy3),
+                            (Dummy4,Dummy1),
+                            )
     
 if __name__=='__main__':
     unittest.main()     

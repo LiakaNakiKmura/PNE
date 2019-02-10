@@ -27,12 +27,14 @@ from testing_utility.unittest_util import cls_startstop_msg as add_msg
 from test_utility import (Signletone_test_base, Inheration_test_base)
 
 # Target class
+
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
                                         PNCalc, PNDataBase, PNPrmtrMng)
 
 # interface
 from src.interface.intfc_com import (Transaction, Reader, Writer)
-from src.interface.calc_data import (PN_TF_Calc)
+import src.interface.intfc_com as intfc_com
+#from src.interface.calc_data import (PN_TF_Calc)
 
 # tool class
 from src.dataio.csvio import (CSVIO)
@@ -43,7 +45,8 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     _sub_sup_class_pairs = ((PNCombiner, Transaction),
                                (PNDataReader, Transaction),
                                (PNDataWriter, Transaction),
-                               (PNCalc, PN_TF_Calc)
+                               #(PNCalc, PN_TF_Calc)
+                               (PNCalc, Transaction)
                                )
 
 @add_msg
@@ -69,6 +72,7 @@ class TestCombinePN(unittest.TestCase):
             Reader_Mock.assert_called()
             Writer_Mock.assert_called()
             PNCalc_Mock.assert_called()
+            del Reader_Mock
             
     def test_database_method(self):
         # Test interface has abstract method.
@@ -100,6 +104,7 @@ class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     """
     _cls = PNDataBase
 
+
 @add_msg  
 class Test_database_detail(unittest.TestCase):
     def setUp(self):
@@ -107,10 +112,10 @@ class Test_database_detail(unittest.TestCase):
     
     def tearDown(self):
         del self.pndb
-        """
+        '''
         Kill PNDataBase instance to reflesh data on each test because 
         pndatabase is singleton.
-        """
+        '''
     def test_database_inputput(self):
         inputdatas = {'noise0':DataFrame(np.zeros((5,2))),
                       'noise1':DataFrame(np.ones((5,2))),
@@ -132,6 +137,8 @@ class Test_database_detail(unittest.TestCase):
             assert_frame_equal(self.pndb.get_noise(n), d+addv)
             # check the rewrite data
 
+            
+            
 @add_msg
 class TestCombineRead(unittest.TestCase):
     """
@@ -143,11 +150,14 @@ class TestCombineRead(unittest.TestCase):
     # Message of calling to read the data.
     
     def setUp(self):
+        
         self.pndb = PNDataBase()
         self.pnpm = PNPrmtrMng()
         self.ask_word()
+        self._make_dummy_inputs()
     
     def tearDown(self):
+        self._del_dummy_inputs()
         del self.pndb
         """
         Kill PNDataBase instance to reflesh data on each test because 
@@ -166,6 +176,9 @@ class TestCombineRead(unittest.TestCase):
         self._msg_and_input ={}
         for i, msg in enumerate(self._reading_messages.values()):
             self._msg_and_input[msg] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
+    
+    def _del_dummy_inputs(self):
+        del self._msg_and_input
             
     def _input_side_effect_generator(self):
         """
@@ -173,23 +186,31 @@ class TestCombineRead(unittest.TestCase):
         message of reader.
         """
         
-        self._make_dummy_inputs()
         def _side_effect(message):
             for msg, data in self._msg_and_input.items():
                 if message == msg:
                     return data
         return _side_effect
     
-    
     def test_readdata(self):
-        self.assertTrue(issubclass(CSVIO, Reader))
-        with patch('src.dataio.csvio.CSVIO.read') as read_data_mock:
-            read_data_mock.side_effect =self._input_side_effect_generator()
+        self.assertTrue(issubclass(CSVIO, intfc_com.Reader))
+        """
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            read_mock.side_effect =self._input_side_effect_generator()
+        """
+        #with patch.object(CSVIO,'read',self._input_side_effect_generator()):
+            
+        with patch('src.transaction.pncombiner.CSVIO.read') as read_mock:
+            read_mock.side_effect =self._input_side_effect_generator()
+            #self._reload_object()
+            
             pndata = PNDataReader()
             pndata.execute()
+            
             assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])
+        
             
 
 if __name__=='__main__':

@@ -13,7 +13,7 @@ Created on Thu Jan 31 20:43:04 2019
 
 #interfaces
 from src.interface.intfc_com import Transaction
-from src.interface.calc_data import (PN_TF_Calc)
+#from src.interface.calc_data import (PN_TF_Calc)
 
 #utilities
 from src.utility.utility import singleton_decorator
@@ -46,9 +46,9 @@ class PNDataReader(Transaction):
 class PNDataWriter(Transaction):
     def execute(self):
         pass
-    
-class PNCalc(PN_TF_Calc):
-    def calc(self):
+
+class PNCalc(Transaction):
+    def execute(self):
         pass
 
 @singleton_decorator

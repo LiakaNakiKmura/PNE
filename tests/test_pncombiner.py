@@ -144,13 +144,12 @@ class TestCombineRead(unittest.TestCase):
     This is the test for reading data of transfer function, phasenoise dadta,
     noise data.
     """
-    
     # Message of calling to read the data.
     
     def setUp(self):        
         self.pndb = PNDataBase()
         self.pnpm = PNPrmtrMng()
-        self.ask_word()
+        self._ask_word()
         self._make_dummy_inputs()
     
     def tearDown(self):
@@ -161,7 +160,7 @@ class TestCombineRead(unittest.TestCase):
         pndatabase is singleton.
         """
         
-    def ask_word(self):
+    def _ask_word(self):
         self._reading_messages={self.pnpm.ref:"Please input reference "\
                                 "phase noise."}
     # Message of calling to read the data.
@@ -200,8 +199,6 @@ class TestCombineRead(unittest.TestCase):
             assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])
-        
-            
 
 if __name__=='__main__':
     unittest.main()

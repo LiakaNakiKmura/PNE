@@ -16,5 +16,5 @@ from context import src # path setting
 from src.interface.intfc_com import PathAsk
 
 class PathDialog(PathAsk):
-    def get_path(self):
+    def get_path(self, message):
         pass

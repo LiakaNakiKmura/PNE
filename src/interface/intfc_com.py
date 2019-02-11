@@ -29,5 +29,5 @@ class Writer(metaclass=abc.ABCMeta):
 
 class PathAsk(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def get_path(self):
+    def get_path(self, message):
         pass

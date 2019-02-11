@@ -45,7 +45,6 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     _sub_sup_class_pairs = ((PNCombiner, Transaction),
                                (PNDataReader, Transaction),
                                (PNDataWriter, Transaction),
-                               #(PNCalc, PN_TF_Calc)
                                (PNCalc, Transaction)
                                )
 
@@ -146,11 +145,9 @@ class TestCombineRead(unittest.TestCase):
     noise data.
     """
     
-    #_reading_messages = ["Please input reference phase noise."]
     # Message of calling to read the data.
     
-    def setUp(self):
-        
+    def setUp(self):        
         self.pndb = PNDataBase()
         self.pnpm = PNPrmtrMng()
         self.ask_word()
@@ -193,16 +190,9 @@ class TestCombineRead(unittest.TestCase):
         return _side_effect
     
     def test_readdata(self):
-        self.assertTrue(issubclass(CSVIO, intfc_com.Reader))
-        """
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
-            read_mock.side_effect =self._input_side_effect_generator()
-        """
-        #with patch.object(CSVIO,'read',self._input_side_effect_generator()):
-            
+        self.assertTrue(issubclass(CSVIO, intfc_com.Reader))            
         with patch('src.transaction.pncombiner.CSVIO.read') as read_mock:
             read_mock.side_effect =self._input_side_effect_generator()
-            #self._reload_object()
             
             pndata = PNDataReader()
             pndata.execute()

@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 
+from pathlib import Path
 import sys
-import os
-# call parent folder.
-parent_paths = [__file__]
-for _ in range(2):
-    parent_paths.append(os.path.abspath(
-            os.path.join(os.path.dirname(parent_paths[-1]), '..')))
-    if not(parent_paths[-1] in sys.path):
-        sys.path.insert(0, parent_paths[-1])
 
+# call parent folder.
+
+depth_of_parents = 2
+'''
+This is the parameter of depth of adding path of parents foleder. If this is 
+set as 2, add paths of parent and parent's parent folder path.
+'''
+
+adding_path = Path(__file__)
+for _ in range(depth_of_parents):
+    adding_path=adding_path.parent
+    if not(str(adding_path) in sys.path):
+        sys.path.insert(0, str(adding_path))
 
 import src
+
 '''
 This is needed when test module import files in the "src" folder placed parent
 folder.

@@ -7,26 +7,21 @@ abstract class Transaction{
 class PNCombiner
 PNCombiner -ri-|> Transaction
 
-abstract class Writer{
-    +write()
-}
-abstract class Reader{
-    +read()
-}
+
 abstract class PN_TF_Calc{
     +calc()
 }
 
-PNCombiner --> Writer
-PNCombiner --> Reader
 PNCombiner --> PN_TF_Calc
+PNCombiner --> PNDataWriter
+PNCombiner --> PNDataReader
 
 class PNDataWriter
 class PNDataReader
 class PNcalc
 
-PNDataWriter --up|> Writer
-PNDataReader --up|> Reader
+PNDataWriter --up|> Transaction
+PNDataReader --up|> Transaction
 PNcalc --up|> PN_TF_Calc
 
 class PNDataBase{

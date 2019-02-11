@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import sys
+import os
 
 # call parent folder.
 
@@ -9,13 +10,14 @@ depth_of_parents = 2
 '''
 This is the parameter of depth of adding path of parents foleder. If this is 
 set as 2, add paths of parent and parent's parent folder path.
+
+0 is the folder where file exists. 
 '''
 
-adding_path = Path(__file__)
-for _ in range(depth_of_parents):
-    adding_path=adding_path.parent
-    if not(str(adding_path) in sys.path):
-        sys.path.insert(0, str(adding_path))
+module_path = Path(os.path.abspath(__file__))
+for i in range(depth_of_parents):
+    if not(str(module_path.parents[i]) in sys.path):
+        sys.path.insert(0, str(module_path.parents[i]))
 
 import src
 

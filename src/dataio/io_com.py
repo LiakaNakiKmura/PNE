@@ -26,3 +26,4 @@ class PathDialog(PathAsk):
 if __name__ == '__main__':
     pth_dia = PathDialog()
     print(pth_dia.get_path('Reading Test'))
+    input()

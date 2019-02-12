@@ -6,7 +6,7 @@ import os
 
 # call parent folder.
 
-depth_of_parents = 2
+depth_of_parents = 3
 '''
 This is the parameter of depth of adding path of parents foleder. If this is 
 set as 2, add paths of parent and parent's parent folder path.

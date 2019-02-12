@@ -16,7 +16,7 @@ from src.interface.intfc_com import Transaction
 #from src.interface.calc_data import (PN_TF_Calc)
 
 #utilities
-from src.utility.utility import singleton_decorator
+from src.utility.utility import singleton_decorator, read_only_getter_decorator
 from src.dataio.csvio import CSVIO
 
 
@@ -74,7 +74,11 @@ class PNDataBase():
     def get_pn(self):
         pass
 
-class PNPrmtrMng():
-    @property
-    def ref(self):
-        return 'reference'
+
+@read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 
+                             'pd':'phase_detector'})
+class PNPrmtrMng():pass
+
+
+class PNAskMessage():
+    pass

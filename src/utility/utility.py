@@ -27,3 +27,11 @@ def singleton_decorator(class_):
             self._sealed = True
             class_w.__name__ = class_.__name__
     return class_w
+
+def read_only_getter_decorator(getter_name_val_dict):
+    def decorator(_class):
+        for n, v in getter_name_val_dict.items():
+            setattr(_class, n, property(lambda x: v))
+            # 'lambda x: v' means fixed return value v. 
+        return _class
+    return decorator

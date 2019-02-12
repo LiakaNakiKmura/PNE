@@ -29,7 +29,8 @@ from test_utility import (Signletone_test_base, Inheration_test_base)
 # Target class
 
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
-                                        PNCalc, PNDataBase, PNPrmtrMng)
+                                        PNCalc, PNDataBase, PNPrmtrMng, 
+                                        PNAskMessage)
 
 # interface
 from src.interface.intfc_com import (Transaction, Reader, Writer)
@@ -88,13 +89,22 @@ class TestCombinePN(unittest.TestCase):
         cannot be changed.
         """
         pnpm = PNPrmtrMng()
-        attrnames = ['ref']
+        
+        pn = Parameter_Names()
+        #attrnames = ['ref']
+        attrnames = pn.get_names()
         for n in attrnames:
             prmtr = getattr(pnpm,n)
             self.assertTrue(isinstance(prmtr, str))
             self.assertTrue(0<len(prmtr))
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
+
+class Parameter_Names():
+    _names = ['ref', 'vco', 'pd']
+    def get_names(self):
+        return self._names
+
 
 @add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
@@ -135,7 +145,6 @@ class Test_database_detail(unittest.TestCase):
         for n, d in inputdatas.items():
             assert_frame_equal(self.pndb.get_noise(n), d+addv)
             # check the rewrite data
-
             
             
 @add_msg
@@ -199,6 +208,13 @@ class TestCombineRead(unittest.TestCase):
             assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])
+    
+    def test_read_ask_msg(self):
+        #self.pnaskmsg = PNAskMessage()
+        pass
+        
+
+  
 
 if __name__=='__main__':
     unittest.main()

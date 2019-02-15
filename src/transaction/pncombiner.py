@@ -32,13 +32,18 @@ class PNCombiner(Transaction):
 class PNDataReader(Transaction):
     def __init__(self):
         self.csvio = CSVIO()
-        self.pnpm = PNPrmtrMng()
         self.pndb = PNDataBase()
         self.prmtr_mng = PNPrmtrMng()
     
     def execute(self):
-        data = self.csvio.read(self.prmtr_mng.get_message(self.pnpm.ref))
-        self.pndb.set_noise(self.pnpm.ref, data)
+        self._readint_targets_list()
+    
+    def _readint_targets_list(self):
+        reading_target=['ref', 'vco', 'pd', 'open_loop_gain']
+        for name in reading_target:
+            parameter = getattr(self.prmtr_mng, name)
+            data = self.csvio.read(self.prmtr_mng.get_message(parameter))
+            self.pndb.set_noise(parameter, data)
 
 class PNDataWriter(Transaction):
     def execute(self):

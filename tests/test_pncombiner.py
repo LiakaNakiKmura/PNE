@@ -118,13 +118,25 @@ class TestCombinePN(unittest.TestCase):
 
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']
-    _meg_names = ['ref', 'vco', 'pd', 'open_loop_gain']
+    _msg_names = ['ref', 'vco', 'pd', 'open_loop_gain']
+    _reading_lists = ['ref', 'vco', 'pd', 'open_loop_gain']
+    
+    def __init__(self):
+        self.pnpm = PNPrmtrMng()
+    
     def get_parameter_names(self):
         return self._names
     
     def get_read_msg_parameters(self):
-        return self._meg_names
-
+        return self._msg_names
+    
+    def get_read_msg_dict(self):
+        prmtrs = [getattr(self.pnpm, n) for n in self._msg_names]
+        return {prmtr: self.pnpm.get_message(prmtr) for prmtr in prmtrs}
+    
+    def get_reading_list(self):
+        return [getattr(self.pnpm, name) for name in self._reading_lists]
+        
 
 @add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
@@ -178,7 +190,7 @@ class TestCombineRead(unittest.TestCase):
     def setUp(self):        
         self.pndb = PNDataBase()
         self.pnpm = PNPrmtrMng()
-        self._ask_word()
+        self._set_ask_word()
         self._make_dummy_inputs()
     
     def tearDown(self):
@@ -189,17 +201,18 @@ class TestCombineRead(unittest.TestCase):
         pndatabase is singleton.
         """
         
-    def _ask_word(self):
-        self._reading_messages={self.pnpm.ref:\
-                                self.pnpm.get_message(self.pnpm.ref)}
-    # Message of calling to read the data.
+    def _set_ask_word(self):
+        pn = Parameter_Names()
+        self._reading_message_dict = pn.get_read_msg_dict()  
+        self._reading_list = pn.get_reading_list()
+        # Message of calling to read the data.
         
     def _make_dummy_inputs(self):
         """
         Make dummy data which match the message of reader is passed.
         """
         self._msg_and_input ={}
-        for i, msg in enumerate(self._reading_messages.values()):
+        for i, msg in enumerate(self._reading_message_dict.values()):
             self._msg_and_input[msg] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
     
     def _del_dummy_inputs(self):
@@ -225,10 +238,10 @@ class TestCombineRead(unittest.TestCase):
             pndata = PNDataReader()
             pndata.execute()
             
-            assert_frame_equal(self.pndb.get_noise(self.pnpm.ref), 
+            for prmtr in self._reading_list:
+                assert_frame_equal(self.pndb.get_noise(prmtr), 
                              self._msg_and_input[
-                                     self._reading_messages[self.pnpm.ref]])
-    
+                                     self._reading_message_dict[prmtr]])
 
 if __name__=='__main__':
     unittest.main()

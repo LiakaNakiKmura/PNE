@@ -29,9 +29,13 @@ def singleton_decorator(class_):
     return class_w
 
 def read_only_getter_decorator(getter_name_val_dict):
+    def return_value_func(val):
+        def getter(_class):
+            return val
+        return getter
+    
     def decorator(_class):
         for n, v in getter_name_val_dict.items():
-            setattr(_class, n, property(lambda x: v))
-            # 'lambda x: v' means fixed return value v. 
+            setattr(_class, n, property(return_value_func(v)))
         return _class
     return decorator

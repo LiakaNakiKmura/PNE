@@ -76,8 +76,26 @@ class PNDataBase():
 
 
 @read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 
-                             'pd':'phase_detector'})
-class PNPrmtrMng():pass
+                             'pd':'phase_detector', 
+                             'open_loop_gain': 'open_loop_gain'})
+class PNPrmtrMng():
+    _reading_param_message_pairs = {'ref':'Please input reference phase noise.', 
+                 'vco':'Please input VCO phase noise.',
+                 'pd':'Please input phase detector phase noise.',
+                 'open_loop_gain':'Please input phase detector phase noise.'}
+    
+    def __init__(self):
+        #self._set_property()
+        self._make_read_message_dict()
+    
+    def get_message(self, parameter_name):
+        return self._read_message_dict[parameter_name]
+    
+    def _make_read_message_dict(self):
+        # Make dictironaly of {parameter str: message}.
+        self._read_message_dict = {}
+        for n, msg in self._reading_param_message_pairs.items():
+            self._read_message_dict[getattr(self, n)] = msg
 
 
 class PNAskMessage():

@@ -91,8 +91,7 @@ class TestCombinePN(unittest.TestCase):
         pnpm = PNPrmtrMng()
         
         pn = Parameter_Names()
-        #attrnames = ['ref']
-        attrnames = pn.get_names()
+        attrnames = pn.get_parameter_names()
         for n in attrnames:
             prmtr = getattr(pnpm,n)
             self.assertTrue(isinstance(prmtr, str))
@@ -100,10 +99,32 @@ class TestCombinePN(unittest.TestCase):
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
 
+    def test_read_file_message_exist(self):
+        """
+        Test of Parameter message for reading data.
+        Parameter class testing.
+        Parameter is property, is string that is greater than 0 length and 
+        cannot be changed.
+        """
+        pnpm = PNPrmtrMng()
+        
+        pn = Parameter_Names()
+        msg_parameters = pn.get_read_msg_parameters()
+        for n in msg_parameters:
+            prmtr = getattr(pnpm,n)
+            
+            prmtr_msg = pnpm.get_message(prmtr)
+            self.assertTrue(isinstance(prmtr_msg, str))
+            self.assertTrue(0<len(prmtr_msg))
+
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']
-    def get_names(self):
+    _meg_names = ['ref', 'vco', 'pd', 'open_loop_gain']
+    def get_parameter_names(self):
         return self._names
+    
+    def get_read_msg_parameters(self):
+        return self._meg_names
 
 
 @add_msg
@@ -209,12 +230,6 @@ class TestCombineRead(unittest.TestCase):
                              self._msg_and_input[
                                      self._reading_messages[self.pnpm.ref]])
     
-    def test_read_ask_msg(self):
-        #self.pnaskmsg = PNAskMessage()
-        pass
-        
-
-  
 
 if __name__=='__main__':
     unittest.main()

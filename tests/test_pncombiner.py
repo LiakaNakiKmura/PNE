@@ -29,8 +29,7 @@ from test_utility import (Signletone_test_base, Inheration_test_base)
 # Target class
 
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
-                                        PNCalc, PNDataBase, PNPrmtrMng, 
-                                        PNAskMessage)
+                                        PNCalc, PNDataBase, PNPrmtrMng)
 
 # interface
 from src.interface.intfc_com import (Transaction, Reader, Writer)
@@ -191,8 +190,8 @@ class TestCombineRead(unittest.TestCase):
         """
         
     def _ask_word(self):
-        self._reading_messages={self.pnpm.ref:"Please input reference "\
-                                "phase noise."}
+        self._reading_messages={self.pnpm.ref:\
+                                self.pnpm.get_message(self.pnpm.ref)}
     # Message of calling to read the data.
         
     def _make_dummy_inputs(self):

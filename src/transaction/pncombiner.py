@@ -34,13 +34,10 @@ class PNDataReader(Transaction):
         self.csvio = CSVIO()
         self.pnpm = PNPrmtrMng()
         self.pndb = PNDataBase()
-        self._make_msg()
-    
-    def _make_msg(self):
-        self._msg ={self.pnpm.ref:"Please input reference phase noise."}
+        self.prmtr_mng = PNPrmtrMng()
     
     def execute(self):
-        data = self.csvio.read(self._msg[self.pnpm.ref])
+        data = self.csvio.read(self.prmtr_mng.get_message(self.pnpm.ref))
         self.pndb.set_noise(self.pnpm.ref, data)
 
 class PNDataWriter(Transaction):
@@ -79,10 +76,12 @@ class PNDataBase():
                              'pd':'phase_detector', 
                              'open_loop_gain': 'open_loop_gain'})
 class PNPrmtrMng():
-    _reading_param_message_pairs = {'ref':'Please input reference phase noise.', 
-                 'vco':'Please input VCO phase noise.',
-                 'pd':'Please input phase detector phase noise.',
-                 'open_loop_gain':'Please input phase detector phase noise.'}
+    _reading_param_message_pairs = {
+            'ref':'Please input reference phase noise.', 
+            'vco':'Please input VCO phase noise.',
+            'pd':'Please input phase detector phase noise.',
+            'open_loop_gain':'Please input open loop gain data.'
+            }
     
     def __init__(self):
         #self._set_property()
@@ -96,7 +95,3 @@ class PNPrmtrMng():
         self._read_message_dict = {}
         for n, msg in self._reading_param_message_pairs.items():
             self._read_message_dict[getattr(self, n)] = msg
-
-
-class PNAskMessage():
-    pass

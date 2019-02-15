@@ -15,10 +15,12 @@ abstract class PN_TF_Calc{
 PNCombiner --> PN_TF_Calc
 PNCombiner --> PNDataWriter
 PNCombiner --> PNDataReader
+PNCombiner --> PNPrmtrMng
 
 class PNDataWriter
 class PNDataReader
 class PNcalc
+class PNPrmtrMng
 
 PNDataWriter --up|> Transaction
 PNDataReader --up|> Transaction

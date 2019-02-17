@@ -42,7 +42,7 @@ from src.dataio.csvio import (CSVIO)
 @add_msg
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
-    _sub_sup_class_pairs = ((PNCombiner, Transaction),
+    _sub_sup_class_pairs = (#(PNCombiner, Transaction),
                                #(PNDataReader, Transaction),
                                #(PNDataWriter, Transaction),
                                #(PNCalc, Transaction)

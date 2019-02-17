@@ -26,6 +26,7 @@ from test_utility import (Inheration_test_base)
 
 # target class
 import src.dataio.csvio as csvio
+from src.dataio.csvio import CSVIO
 from src.dataio.io_com import (PathDialog)
 
 # interface
@@ -35,9 +36,15 @@ from src.interface.intfc_com import (Reader, Writer, PathAsk)
 @add_msg
 class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
+    """
     _sub_sup_class_pairs =((csvio.CSVIO, Reader), 
                            (PathDialog, PathAsk),
                            (csvio.CSVIO, Writer)
+                           )
+    """
+    _sub_sup_class_pairs =((CSVIO, Reader), 
+                           (PathDialog, PathAsk),
+                           (CSVIO, Writer)
                            )
 
 @add_msg

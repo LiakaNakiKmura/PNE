@@ -7,4 +7,5 @@ install:
   - pip install pytest
   - pip install pytest-capturelog
 script: 
-- python -m unittest discover  -p "test_*.py"
+- cd .\tests
+- python -m unittest discover

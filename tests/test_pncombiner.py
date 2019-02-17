@@ -43,9 +43,9 @@ from src.dataio.csvio import (CSVIO)
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs = ((PNCombiner, Transaction),
-                               (PNDataReader, Transaction),
-                               (PNDataWriter, Transaction),
-                               (PNCalc, Transaction)
+                               #(PNDataReader, Transaction),
+                               #(PNDataWriter, Transaction),
+                               #(PNCalc, Transaction)
                                )
 
 @add_msg
@@ -100,8 +100,7 @@ class TestPNparameter(unittest.TestCase):
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
 
-
-    def test_read_file_message_exist(self):
+    def test_file_message_exist(self):
         '''
         Test of Parameter message for reading data.
         Parameter class testing.
@@ -111,52 +110,14 @@ class TestPNparameter(unittest.TestCase):
         pnpm = PNPrmtrMng()
         
         pn = Parameter_Names()
-        msg_parameters = pn.get_read_msg_parameters()
-        for n in msg_parameters:
-            prmtr = getattr(pnpm,n)            
-            prmtr_msg = pnpm.get_message('r', prmtr)
-            self.assertTrue(isinstance(prmtr_msg, str))
-            self.assertTrue(0<len(prmtr_msg))
-     
-    """
-    def test_write_file_message_exist(self):
-        '''
-        Test of Parameter message for writing data.
-        Parameter class testing.
-        Parameter is property, is string that is greater than 0 length and 
-        cannot be changed.
-        '''
-        pnpm = PNPrmtrMng()
-        
-        pn = Parameter_Names()
-        msg_parameters = pn.get_write_msg_parameters()
-        for n in msg_parameters:
-            prmtr = getattr(pnpm,n)
-            
-            prmtr_msg = pnpm.get_writing_message(prmtr)
-            self.assertTrue(isinstance(prmtr_msg, str))
-            self.assertTrue(0<len(prmtr_msg))
-    """
-
-
-    def test_write_file_message_exist(self):
-        '''
-        Test of Parameter message for writing data.
-        Parameter class testing.
-        Parameter is property, is string that is greater than 0 length and 
-        cannot be changed.
-        '''
-        pnpm = PNPrmtrMng()
-        
-        pn = Parameter_Names()
-        msg_parameters = pn.get_write_msg_parameters()
-        for n in msg_parameters:
-            prmtr = getattr(pnpm,n)
-            
-            prmtr_msg = pnpm.get_message('w', prmtr)
-            self.assertTrue(isinstance(prmtr_msg, str))
-            self.assertTrue(0<len(prmtr_msg))
-
+        msg_parameters = {'r': pn.get_read_msg_parameters(),
+                          'w':  pn.get_write_msg_parameters()}
+        for usage, name_msg_pairs in msg_parameters.items():
+            for name in name_msg_pairs :
+                prmtr = getattr(pnpm,name) 
+                prmtr_msg = pnpm.get_message(usage, prmtr)
+                self.assertTrue(isinstance(prmtr_msg, str))
+                self.assertTrue(0<len(prmtr_msg))
 
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']

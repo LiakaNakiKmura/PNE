@@ -40,7 +40,6 @@ class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
                            (PathDialog, PathAsk),
                            (csvio.CSVIO, Writer)
                            )
-    raise()
 
 
 @add_msg

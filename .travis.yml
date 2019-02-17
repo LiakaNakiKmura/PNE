@@ -6,4 +6,3 @@ install:
   - pip install pandas
 script: 
 - python -m unittest discover -s tests
-- python -m unittest discover 

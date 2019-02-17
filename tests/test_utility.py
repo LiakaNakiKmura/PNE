@@ -81,13 +81,12 @@ class Inheration_test_base():
     super class2),...)
     """
     _sub_sup_class_pairs = ((None,None))
-    """
+
     def test_interfacre(self):
         # Check using class has interface.
         for subc, supc in self._sub_sup_class_pairs:
             print ((subc, supc))
             self.assertTrue(issubclass(subc, supc))
-    """
 
 class Dummy1():pass
 class Dummy2(Dummy1):pass

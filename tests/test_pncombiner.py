@@ -79,14 +79,15 @@ class TestCombinePN(unittest.TestCase):
                       'get_transfer_func', 'set_pn', 'get_pn')
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
-        
-    
+
+@add_msg
+class TestPNparameter(unittest.TestCase):
     def test_parameter_exist(self):
-        """
+        '''
         Parameter class testing.
         Parameter is property, is string that is greater than 0 length and 
         cannot be changed.
-        """
+        '''
         pnpm = PNPrmtrMng()
         
         pn = Parameter_Names()
@@ -99,12 +100,12 @@ class TestCombinePN(unittest.TestCase):
             # Raise error if property value is changed.
 
     def test_read_file_message_exist(self):
-        """
+        '''
         Test of Parameter message for reading data.
         Parameter class testing.
         Parameter is property, is string that is greater than 0 length and 
         cannot be changed.
-        """
+        '''
         pnpm = PNPrmtrMng()
         
         pn = Parameter_Names()
@@ -120,6 +121,7 @@ class Parameter_Names():
     _names = ['ref', 'vco', 'pd']
     _msg_names = ['ref', 'vco', 'pd', 'open_loop_gain']
     _reading_lists = ['ref', 'vco', 'pd', 'open_loop_gain']
+    _writing_lists = ['total']
     
     def __init__(self):
         self.pnpm = PNPrmtrMng()
@@ -136,7 +138,13 @@ class Parameter_Names():
     
     def get_reading_list(self):
         return [getattr(self.pnpm, name) for name in self._reading_lists]
-        
+ 
+    def get_write_msg_dict(self):
+        prmtrs = [getattr(self.pnpm, n) for n in self._msg_names]
+        return {prmtr: self.pnpm.get_message(prmtr) for prmtr in prmtrs}
+    
+    def get_writing_list(self):
+        return [getattr(self.pnpm, name) for name in self._writing_lists]        
 
 @add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
@@ -208,12 +216,16 @@ class TestCombineRead(unittest.TestCase):
         # Message of calling to read the data.
         
     def _make_dummy_inputs(self):
-        """
+        '''
         Make dummy data which match the message of reader is passed.
-        """
+        '''
+        
         self._msg_and_input ={}
-        for i, msg in enumerate(self._reading_message_dict.values()):
-            self._msg_and_input[msg] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
+        self._msg_para = dict((v,k) for k,v in 
+                              self._reading_message_dict.items())
+        self._inputdata = {}
+        for i, parameter in enumerate(self._reading_list):
+            self._inputdata[parameter] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
     
     def _del_dummy_inputs(self):
         del self._msg_and_input
@@ -225,13 +237,14 @@ class TestCombineRead(unittest.TestCase):
         """
         
         def _side_effect(message):
-            for msg, data in self._msg_and_input.items():
-                if message == msg:
-                    return data
+            '''
+            return the dummy data of self._inputdata. The data is chosen by 
+            message. message is transformed into parameter in self._msg_para.
+            '''
+            return self._inputdata[self._msg_para[message]]
         return _side_effect
     
-    def test_readdata(self):
-        self.assertTrue(issubclass(CSVIO, intfc_com.Reader))            
+    def test_readdata(self):           
         with patch('src.transaction.pncombiner.CSVIO.read') as read_mock:
             read_mock.side_effect =self._input_side_effect_generator()
             
@@ -240,8 +253,60 @@ class TestCombineRead(unittest.TestCase):
             
             for prmtr in self._reading_list:
                 assert_frame_equal(self.pndb.get_noise(prmtr), 
-                             self._msg_and_input[
-                                     self._reading_message_dict[prmtr]])
+                                   self._inputdata[prmtr])
 
+@add_msg
+class TestCombineWrite(unittest.TestCase):
+    """
+    This is the test for reading data of transfer function, phasenoise dadta,
+    noise data.
+    """
+    # Message of calling to read the data.
+    
+    def setUp(self):        
+        self.pndb = PNDataBase()
+        self.pnpm = PNPrmtrMng()
+        self._set_ask_word()
+        self._make_dummy_inputs()
+    
+    def tearDown(self):
+        self._del_dummy_inputs()
+        del self.pndb
+        """
+        Kill PNDataBase instance to reflesh data on each test because 
+        pndatabase is singleton.
+        """
+        
+    def _set_ask_word(self):
+        pn = Parameter_Names()
+        self._reading_message_dict = pn.get_write_msg_dict()  
+        self._reading_list = pn.get_reading_list()
+        # Message of calling to read the data.
+        
+    def _make_dummy_inputs(self):
+        """
+        Make dummy data which match the message of reader is passed.
+        """
+        self._msg_and_input ={}
+        for i, parameter in enumerate(self._reading_message_dict.values()):
+            self._msg_and_input[parameter] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
+    
+    def _del_dummy_inputs(self):
+        del self._msg_and_input
+
+    def _test_savedata(self):      
+        '''
+        Test data is saved correctry.
+        '''
+        
+        with patch('src.transaction.pncombiner.CSVIO.write') as write_mock:
+            
+            pndata = PNDataWriter()
+            pndata.execute()
+            
+            outputdata = [(k, v) for k, v in self._msg_and_input.items()]
+            print(write_mock.call_args_list)
+            self.assertTrue(write_mock.call_args_list == outputdata)
+            
 if __name__=='__main__':
     unittest.main()

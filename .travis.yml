@@ -4,4 +4,4 @@ install: pip install sphinx
 script: 
 - make doctest
 - make html
-- test_runner.py
+- python test_runner.py test

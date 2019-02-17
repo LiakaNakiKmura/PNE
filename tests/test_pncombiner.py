@@ -100,6 +100,7 @@ class TestPNparameter(unittest.TestCase):
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
 
+
     def test_read_file_message_exist(self):
         '''
         Test of Parameter message for reading data.
@@ -112,12 +113,12 @@ class TestPNparameter(unittest.TestCase):
         pn = Parameter_Names()
         msg_parameters = pn.get_read_msg_parameters()
         for n in msg_parameters:
-            prmtr = getattr(pnpm,n)
-            
-            prmtr_msg = pnpm.get_reading_message(prmtr)
+            prmtr = getattr(pnpm,n)            
+            prmtr_msg = pnpm.get_message('r', prmtr)
             self.assertTrue(isinstance(prmtr_msg, str))
             self.assertTrue(0<len(prmtr_msg))
-
+     
+    """
     def test_write_file_message_exist(self):
         '''
         Test of Parameter message for writing data.
@@ -135,6 +136,27 @@ class TestPNparameter(unittest.TestCase):
             prmtr_msg = pnpm.get_writing_message(prmtr)
             self.assertTrue(isinstance(prmtr_msg, str))
             self.assertTrue(0<len(prmtr_msg))
+    """
+
+
+    def test_write_file_message_exist(self):
+        '''
+        Test of Parameter message for writing data.
+        Parameter class testing.
+        Parameter is property, is string that is greater than 0 length and 
+        cannot be changed.
+        '''
+        pnpm = PNPrmtrMng()
+        
+        pn = Parameter_Names()
+        msg_parameters = pn.get_write_msg_parameters()
+        for n in msg_parameters:
+            prmtr = getattr(pnpm,n)
+            
+            prmtr_msg = pnpm.get_message('w', prmtr)
+            self.assertTrue(isinstance(prmtr_msg, str))
+            self.assertTrue(0<len(prmtr_msg))
+
 
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']
@@ -157,14 +179,14 @@ class Parameter_Names():
     
     def get_read_msg_dict(self):
         prmtrs = [getattr(self.pnpm, n) for n in self._reading_msg_names]
-        return {prmtr: self.pnpm.get_reading_message(prmtr) for prmtr in prmtrs}
+        return {prmtr: self.pnpm.get_message('r', prmtr) for prmtr in prmtrs}
     
     def get_reading_list(self):
         return [getattr(self.pnpm, name) for name in self._reading_lists]
  
     def get_write_msg_dict(self):
         prmtrs = [getattr(self.pnpm, n) for n in self._writing_msg_names]
-        return {prmtr: self.pnpm.get_writing_message(prmtr) for prmtr in prmtrs}
+        return {prmtr: self.pnpm.get_message('w', prmtr) for prmtr in prmtrs}
     
     def get_writing_list(self):
         return [getattr(self.pnpm, name) for name in self._writing_lists]        

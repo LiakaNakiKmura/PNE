@@ -42,7 +42,9 @@ class PNDataReader(Transaction):
         reading_target=['ref', 'vco', 'pd', 'open_loop_gain']
         for name in reading_target:
             parameter = getattr(self.prmtr_mng, name)
-            data = self.csvio.read(self.prmtr_mng.get_reading_message(parameter))
+            data = self.csvio.read(self.prmtr_mng.get_message(
+                    self.prmtr_mng.read_setting, parameter))
+            
             self.pndb.set_noise(parameter, data)
 
 class PNDataWriter(Transaction):
@@ -93,25 +95,23 @@ class PNPrmtrMng():
             'total':'Please write the total data'
             }
     
+    read_setting = 'r'
+    write_setting = 'w'
+    
     def __init__(self):
-        #self._set_property()
-        self._make_read_message_dict()
-        self._make_write_message_dict()
-    
-    def get_reading_message(self, parameter_name):
-        return self._read_message_dict[parameter_name]
- 
-    def get_writing_message(self, parameter_name):
-        return self._write_message_dict[parameter_name]
-    
-    def _make_read_message_dict(self):
-        # Make dictironaly of {parameter str: message}.
-        self._read_message_dict = {}
-        for n, msg in self._reading_param_message_pairs.items():
-            self._read_message_dict[getattr(self, n)] = msg
+        self._make_message_dict()
 
-    def _make_write_message_dict(self):
-        # Make dictironaly of {parameter str: message}.
-        self._write_message_dict = {}
-        for n, msg in self._writing_param_message_pairs.items():
-            self._write_message_dict[getattr(self, n)] = msg
+    def get_message(self, usage, parameter_name):
+        return self._message_dict[usage][parameter_name]
+
+    def _make_message_dict(self):
+        # Make dictironaly of {usage:{parameter str: message}}.
+        self._message_dict = {}
+        usage_name_msg_pairs =\
+        {self.read_setting: self._reading_param_message_pairs,
+         self.write_setting: self._writing_param_message_pairs
+         }
+
+        for usage, msg_pairs in usage_name_msg_pairs.items():
+            self._message_dict[usage]=\
+            {getattr(self, name): msg for name, msg in msg_pairs.items()}

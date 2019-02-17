@@ -39,7 +39,7 @@ import src.interface.intfc_com as intfc_com
 # tool class
 from src.dataio.csvio import (CSVIO)
 
-"""
+
 @add_msg
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
@@ -48,7 +48,7 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
                                (PNDataWriter, Transaction),
                                (PNCalc, Transaction)
                                )
-"""
+
 
 @add_msg
 class TestCombinePN(unittest.TestCase):

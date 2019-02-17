@@ -7,8 +7,6 @@ If this module is not __main__, do nothing
 
 @author: LiNaK
 """
-
-if __name__ == '__main__':
-    import unittest 
-    test_suite = unittest.TestLoader().discover('tests', pattern='test_*.py')
-    unittest.TextTestRunner().run(test_suite)
+import unittest 
+test_suite = unittest.TestLoader().discover('tests', pattern='test_*.py')
+unittest.TextTestRunner().run(test_suite)

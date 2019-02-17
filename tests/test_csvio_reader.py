@@ -33,7 +33,7 @@ from src.interface.intfc_com import (Reader, Writer, PathAsk)
 
 
 @add_msg
-class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
+class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs =((csvio.CSVIO, Reader), 
                            (PathDialog, PathAsk),

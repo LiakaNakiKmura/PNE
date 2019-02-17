@@ -36,7 +36,9 @@ from src.interface.intfc_com import (Reader, Writer, PathAsk)
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs =((csvio.CSVIO, Reader), 
-                           (PathDialog, PathAsk))
+                           (PathDialog, PathAsk),
+                           (csvio.CSVIO, Writer)
+                           )
 
 @add_msg
 class Test_rading(unittest.TestCase):

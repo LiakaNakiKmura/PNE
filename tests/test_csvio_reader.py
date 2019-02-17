@@ -36,16 +36,11 @@ from src.interface.intfc_com import (Reader, Writer, PathAsk)
 @add_msg
 class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
-    """
     _sub_sup_class_pairs =((csvio.CSVIO, Reader), 
                            (PathDialog, PathAsk),
                            (csvio.CSVIO, Writer)
                            )
-    """
-    _sub_sup_class_pairs =((CSVIO, Reader), 
-                           (PathDialog, PathAsk),
-                           (CSVIO, Writer)
-                           )
+
 
 @add_msg
 class Test_rading(unittest.TestCase):

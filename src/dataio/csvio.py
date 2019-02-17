@@ -14,14 +14,19 @@ import pandas as pd
 from context import src # path setting
 
 # interface
-from src.interface.intfc_com import (Reader, )
+from src.interface.intfc_com import (Reader, Writer)
 from src.dataio.io_com import PathDialog
 
-class CSVIO(Reader):
+
+
+class CSVIO(Reader, Writer):
     def __init__(self):
         self.path_dialog =  PathDialog()
         
     def read(self, message):
         data_path = self.path_dialog.get_path(message)
         return  pd.read_csv(data_path)
+    
+    def write(self):
+        pass
     

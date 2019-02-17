@@ -1,7 +1,5 @@
 sudo: false
 language: python
-install: pip install sphinx
+install: pip install pytest
 script: 
-- make doctest
-- make html
-- python test_runner.py test
+- py.test test_runner.py

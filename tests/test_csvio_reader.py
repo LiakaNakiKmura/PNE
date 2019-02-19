@@ -46,12 +46,26 @@ class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
 class Test_rading(unittest.TestCase):
     def test_data_rading(self):
         self.ddft=DummyDataForTest()
-        dummy_path = self.ddft.get_dummy_data_path()
+        dummy_path = self.ddft.get_dummy_read_data_path()
         with patch('src.dataio.io_com.PathDialog.get_path') as get_path_mock:
             get_path_mock.return_value = dummy_path
             cio = csvio.CSVIO()
             data = cio.read('Asking message')
             assert_frame_equal(data, self.ddft.inputdata)
+
+
+@add_msg
+class Test_writing(unittest.TestCase):
+    def test_data_writing(self):
+        self.ddft=DummyDataForTest()
+        dummy_path = self.ddft.get_dummy_write_data_path()
+        with patch('src.dataio.io_com.PathDialog.get_path') as get_path_mock:
+            get_path_mock.return_value = dummy_path
+            cio = csvio.CSVIO()
+            cio.write('Asking message', self.ddft.outputdata)
+            data = pd.read_csv(dummy_path)
+            assert_frame_equal(data, self.ddft.outputdata)
+
 
 class DummyDataForTest():
     def __init__(self):
@@ -59,13 +73,22 @@ class DummyDataForTest():
                       name = 'freq')
         phasenoise = Series([-60,-80,-100,-120,-140, -160, -174, -174],
                             name = 'phasenoise')
+        phasenoise_write = phasenoise + 20
         self.inputdata = pd.concat([freq, phasenoise], axis = 1)
+        self.outputdata = pd.concat([freq, phasenoise_write], axis = 1)
         
-    def get_dummy_data_path(self):
+    def get_dummy_read_data_path(self):
         module_path = Path(os.path.abspath(__file__)).parent
         dummy_data_foleder_name = 'dummy_data'
         _dummy_data_file_name = 'test_csv_reader.csv'
         return str(module_path / dummy_data_foleder_name / _dummy_data_file_name)
+
+    def get_dummy_write_data_path(self):
+        module_path = Path(os.path.abspath(__file__)).parent
+        dummy_data_foleder_name = 'dummy_data'
+        _dummy_data_file_name = 'test_csv_writer.csv'
+        return str(module_path / dummy_data_foleder_name / _dummy_data_file_name)
+
 
 if __name__=='__main__':
     unittest.main()

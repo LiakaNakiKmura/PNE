@@ -6,14 +6,15 @@ Created on Thu Jan 31 20:43:04 2019
 """
 
 # Standard module
+import abc
 
 # 3rd party's module
+
 
 # Original module  
 
 #interfaces
 from src.interface.intfc_com import Transaction
-#from src.interface.calc_data import (PN_TF_Calc)
 
 #utilities
 from src.utility.utility import singleton_decorator, read_only_getter_decorator
@@ -29,40 +30,67 @@ class PNCombiner(Transaction):
     def execute(self):
         pass
 
-class PNDataReader(Transaction):
-    def __init__(self):
-        self.csvio = CSVIO()
-        self.pndb = PNDataBase()
-        self.prmtr_mng = PNPrmtrMng()
-    
-    def execute(self):
-        self._readint_targets_list()
-    
-    def _readint_targets_list(self):
-        reading_target=['ref', 'vco', 'pd', 'open_loop_gain']
-        for name in reading_target:
-            parameter = getattr(self.prmtr_mng, name)
-            data = self.csvio.read(self.prmtr_mng.get_message(
-                    self.prmtr_mng.read_setting, parameter))
-            
-            self.pndb.set_noise(parameter, data)
 
-class PNDataWriter(Transaction):
+class _PNDataIOCommon(Transaction):
+    '''
+    This is the base class to read or write data that is listed in '_target'
+    from or to output.
+    '''
+    _target = []
+    
     def __init__(self):
         self.csvio = CSVIO()
         self.pndb = PNDataBase()
-        self.prmtr_mng = PNPrmtrMng()
-        
+        self.pnpm = PNPrmtrMng()
+        self._set_io_setting()
+
     def execute(self):
-        self._writing_targets_list()
+        for name in self._target:
+            parameter, message = self._get_parameter_msg(name)
+            self._do_io(parameter, message)
     
-    def _writing_targets_list(self):
-        writing_target=['total']
-        for name in writing_target:
-            parameter = getattr(self.prmtr_mng, name)
-            data = self.pndb.get_combined_noise(parameter)     
-            self.csvio.write(self.prmtr_mng.get_message(
-                    self.prmtr_mng.write_setting, parameter), data)
+    @abc.abstractmethod
+    def _set_io_setting(self):
+        '''
+        Subclass is needed to overwrite this method to set the _io_setting as
+        reding or writing defined in PNPrmtrMng. This setting will be used for
+        choosing the message reading or writing.
+        '''
+        self._io_setting = None
+    
+    def _get_parameter_msg(self, name):
+        parameter = getattr(self.pnpm, name)
+        message = self.pnpm.get_message(self._io_setting, parameter)
+        return (parameter, message)
+    
+    @abc.abstractmethod
+    def _do_io(self, parameter, message):
+        '''
+        Subclass is needed to overwrite to set the reading or writing.
+        '''
+        pass
+
+class PNDataReader(_PNDataIOCommon):
+    _target = ['ref', 'vco', 'pd', 'open_loop_gain']
+    
+    def _set_io_setting(self):
+        self._io_setting = self.pnpm.read_setting
+    
+    def _do_io(self, parameter, message):
+        data = self.csvio.read(message)
+        self.pndb.set_noise(parameter, data)
+
+
+class PNDataWriter(_PNDataIOCommon):
+    _target=['total']
+    
+    def _set_io_setting(self):
+        self._io_setting = self.pnpm.write_setting
+        pass
+    
+    def _do_io(self, parameter, message):
+        data = self.pndb.get_combined_noise(parameter)     
+        self.csvio.write(message, data)
 
 class PNCalc(Transaction):
     def execute(self):

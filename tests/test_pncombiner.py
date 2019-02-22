@@ -307,6 +307,8 @@ class TestCombineWrite(unittest.TestCase):
             
             pndatawriter = PNDataWriter()
             pndatawriter.execute()
+            self.assertTrue(len(write_mock.call_args_list) > 0)
+            # If not called raise error.
             
             for call, key, data in zip(write_mock.call_args_list,
                                        self._inputdata.keys(),

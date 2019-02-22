@@ -249,7 +249,7 @@ class TestCombineRead(unittest.TestCase):
     
 
     def test_readdata(self):           
-        with patch('src.transaction.pncombiner.CSVIO.read') as read_mock:
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
             read_mock.side_effect =self._input_side_effect_generator()
             
             pndata = PNDataReader()
@@ -295,22 +295,25 @@ class TestCombineWrite(unittest.TestCase):
         for i, parameter in enumerate(self._writing_list):
             self._inputdata[parameter] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
 
-    def _test_savedata(self):      
+    def test_savedata(self):      
         '''
         Test data is saved correctry.
         '''
         
-        with patch('src.transaction.pncombiner.CSVIO.write') as write_mock:
+        with patch('src.dataio.csvio.CSVIO.write') as write_mock:
             
             for parameter, dummydata in self._inputdata.items():
                 self.pndb.set_combined_noise(parameter, dummydata)
+            
             pndatawriter = PNDataWriter()
             pndatawriter.execute()
             
-            outputdata = [(self._writing_message_dict[k], v)\
-                          for k, v in self._inputdata.items()]
-            print(write_mock.call_args_list)
-            self.assertTrue(write_mock.call_args_list == outputdata)
+            for call, key, data in zip(write_mock.call_args_list,
+                                       self._inputdata.keys(),
+                                       self._inputdata.values()):
+                args, kwargs =call
+                self.assertTrue(args[0]==self._writing_message_dict[key])
+                assert_frame_equal(args[1],data)
             
 if __name__=='__main__':
     unittest.main()

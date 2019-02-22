@@ -43,8 +43,8 @@ class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
 
 
 @add_msg
-class Test_rading(unittest.TestCase):
-    def test_data_rading(self):
+class Test_reading(unittest.TestCase):
+    def test_data_reading(self):
         self.ddft=DummyDataForTest()
         dummy_path = self.ddft.get_dummy_read_data_path()
         with patch('src.dataio.io_com.PathDialog.get_path') as get_path_mock:
@@ -71,10 +71,10 @@ class DummyDataForTest():
     def __init__(self):
         freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000], 
                       name = 'freq')
-        phasenoise = Series([-60,-80,-100,-120,-140, -160, -174, -174],
+        phasenoise_read = Series([-60,-80,-100,-120,-140, -160, -174, -174],
                             name = 'phasenoise')
-        phasenoise_write = phasenoise + 20
-        self.inputdata = pd.concat([freq, phasenoise], axis = 1)
+        phasenoise_write = phasenoise_read + 20
+        self.inputdata = pd.concat([freq, phasenoise_read], axis = 1)
         self.outputdata = pd.concat([freq, phasenoise_write], axis = 1)
         
     def get_dummy_read_data_path(self):

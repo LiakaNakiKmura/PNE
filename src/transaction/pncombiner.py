@@ -48,8 +48,21 @@ class PNDataReader(Transaction):
             self.pndb.set_noise(parameter, data)
 
 class PNDataWriter(Transaction):
+    def __init__(self):
+        self.csvio = CSVIO()
+        self.pndb = PNDataBase()
+        self.prmtr_mng = PNPrmtrMng()
+        
     def execute(self):
-        pass
+        self._writing_targets_list()
+    
+    def _writing_targets_list(self):
+        writing_target=['total']
+        for name in writing_target:
+            parameter = getattr(self.prmtr_mng, name)
+            data = self.pndb.get_combined_noise(parameter)     
+            self.csvio.write(self.prmtr_mng.get_message(
+                    self.prmtr_mng.write_setting, parameter), data)
 
 class PNCalc(Transaction):
     def execute(self):

@@ -9,12 +9,16 @@ Created on Sun Feb  3 18:08:17 2019
 import unittest
 
 # 3rd party's module
+import numpy as np
+from numpy.testing import assert_array_almost_equal
 
 # Original module  
 from context import src # path setting
 
 # Target class
 from src.utility.utility import singleton_decorator
+from src.utility.calc import MagLogUtil
+
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 
@@ -98,6 +102,47 @@ class Test_inheration(Inheration_test_base,unittest.TestCase):
                             (Dummy4,Dummy3),
                             (Dummy4,Dummy1),
                             )
+
+@add_msg
+class TestMagLog_utility(unittest.TestCase):
+    def setUp(self):
+        self._make_io_data()
+    
+    
+    def _make_io_data(self):
+        log10data_list = [20,10,0,-10,-20]
+        log10data = np.array(log10data_list)
+        log20data = log10data*2
+        log10_one_data = 30 +0j
+        
+        magdata_list = [100, 10, 1, 0.1, 0.01]
+        magdata = np.array(magdata_list)
+        mag_one_data = 1000 + 0j
+        
+        N10 = 10
+        N20 = 20
+        
+        self.data_list = (log10data_list,magdata_list, N10)
+        self.data_10 = (log10data, magdata, N10) 
+        self.data_20 = (log20data, magdata, N20)
+        self.data_single_num = (log10_one_data, mag_one_data, N10)
+    
+    def test_log2Mag(self):
+        mlu = MagLogUtil()
+        for indata, outdata, NUM in [self.data_list, self.data_10, 
+                                     self.data_20, self.data_single_num]:
+            assert_array_almost_equal(outdata, mlu.log2mag(indata, NUM))
+        self.assertRaises(TypeError, mlu.log2mag, 'a',)
+    
+    def test_mag2log(self):
+        mlu = MagLogUtil()
+        input_data = [self.data_list, self.data_10, self.data_20, 
+                      self.data_single_num]
+
+        for outdata, indata, NUM in input_data:
+            assert_array_almost_equal(outdata, mlu.mag2log(indata, NUM))
+        self.assertRaises(TypeError, mlu.mag2log, 'a',)
+        
     
 if __name__=='__main__':
     unittest.main()     

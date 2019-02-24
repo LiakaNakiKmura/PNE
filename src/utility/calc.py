@@ -38,3 +38,7 @@ class MagLogUtil():
         def calc(data, N):
             return N*np.log10(data)
         return self._chk_type_and_apply_func(calc, data, N)
+    
+    def magdeg2comp(self, mag, deg):
+        return mag*np.exp(np.deg2rad(deg)*1j)
+        

@@ -106,18 +106,19 @@ class Test_inheration(Inheration_test_base,unittest.TestCase):
 @add_msg
 class TestMagLog_utility(unittest.TestCase):
     def setUp(self):
-        self._make_io_data()
+        self._make_maglog_data()
     
     
-    def _make_io_data(self):
+    def _make_maglog_data(self):
         log10data_list = [20,10,0,-10,-20]
         log10data = np.array(log10data_list)
         log20data = log10data*2
-        log10_one_data = 30 +0j
+        log10_one_data = 30
+        nulldata = []
         
         magdata_list = [100, 10, 1, 0.1, 0.01]
         magdata = np.array(magdata_list)
-        mag_one_data = 1000 + 0j
+        mag_one_data = 1000
         
         N10 = 10
         N20 = 20
@@ -126,23 +127,49 @@ class TestMagLog_utility(unittest.TestCase):
         self.data_10 = (log10data, magdata, N10) 
         self.data_20 = (log20data, magdata, N20)
         self.data_single_num = (log10_one_data, mag_one_data, N10)
+        self.data_null = (nulldata, nulldata, N10)
     
     def test_log2Mag(self):
         mlu = MagLogUtil()
         for indata, outdata, NUM in [self.data_list, self.data_10, 
-                                     self.data_20, self.data_single_num]:
+                                     self.data_20, self.data_single_num,
+                                     self.data_null]:
             assert_array_almost_equal(outdata, mlu.log2mag(indata, NUM))
         self.assertRaises(TypeError, mlu.log2mag, 'a',)
     
     def test_mag2log(self):
         mlu = MagLogUtil()
         input_data = [self.data_list, self.data_10, self.data_20, 
-                      self.data_single_num]
+                      self.data_single_num, self.data_null]
 
         for outdata, indata, NUM in input_data:
             assert_array_almost_equal(outdata, mlu.mag2log(indata, NUM))
         self.assertRaises(TypeError, mlu.mag2log, 'a',)
         
+    def test_mag_deg2comp(self):
+        mlu = MagLogUtil()
+        self._random_data = {}
+        amp = 'amp'
+        deg = 'phase_deg'
+        comp = 'complex'
+        
+        self._random_data[amp] = [7283, 6003, 4485, 3561, 6909]
+        self._random_data[deg]=[55, 280, 57, 133, 271]
+        self._random_data[comp] = [4177.35718594467+5965.88433855673j, 
+                         1042.41001053456-5911.80094133229j,
+                         2442.7060720424+3761.43749723523j,
+                         -2428.59616018256+2604.35053146586j,
+                         120.578676075171-6907.94772583551j]
+        
+        self._easy_data={}
+        self._easy_data[amp]=[0, 1, 1, 10]
+        self._easy_data[deg]=[0, 180, 90, 540]
+        self._easy_data[comp] =[0+0j, -1+0j, 0+1j, -10+0j]
+        
+        for data in [self._random_data, self._easy_data]:
+            calced = mlu.magdeg2comp(data[amp], data[deg])
+            assert_array_almost_equal(data[comp], calced)
+            
     
 if __name__=='__main__':
     unittest.main()     

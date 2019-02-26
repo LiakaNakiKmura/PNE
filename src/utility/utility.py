@@ -26,6 +26,7 @@ def singleton_decorator(class_):
             super(class_w, self).__init__(*args, **kwargs)
             self._sealed = True
             class_w.__name__ = class_.__name__
+        
     return class_w
 
 def read_only_getter_decorator(getter_name_val_dict):

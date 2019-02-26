@@ -15,9 +15,12 @@ import unittest
 from unittest.mock import patch
 
 # 3rd party's module
+import pandas as pd
 from pandas import Series, DataFrame
 from pandas.testing import assert_series_equal, assert_frame_equal
+
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 # Original module
 
@@ -152,7 +155,9 @@ class Parameter_Names():
         return {prmtr: self.pnpm.get_message('w', prmtr) for prmtr in prmtrs}
     
     def get_writing_list(self):
-        return [getattr(self.pnpm, name) for name in self._writing_lists]        
+        return [getattr(self.pnpm, name) for name in self._writing_lists]
+    
+      
 
 @add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
@@ -162,17 +167,20 @@ class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     _cls = PNDataBase
 
 
-@add_msg  
-class Test_database_detail(unittest.TestCase):
-    def setUp(self):
+class UsingPNDataBase:
+    def setUp(self):        
         self.pndb = PNDataBase()
     
     def tearDown(self):
-        del self.pndb
+        self.pndb.reflesh_all()
+        #del self.pndb
         '''
         Kill PNDataBase instance to reflesh data on each test because 
         pndatabase is singleton.
         '''
+
+@add_msg  
+class Test_database_detail(UsingPNDataBase, unittest.TestCase):
     def test_database_inputput(self):
         inputdatas = {'noise0':DataFrame(np.zeros((5,2))),
                       'noise1':DataFrame(np.ones((5,2))),
@@ -193,34 +201,49 @@ class Test_database_detail(unittest.TestCase):
         for n, d in inputdatas.items():
             assert_frame_equal(self.pndb.get_noise(n), d+addv)
             # check the rewrite data
-            
-            
+    
+    def test_reflesh(self):
+        dummydata = DataFrame(np.zeros((5,2))) 
+        key = 'dummy data'
+        setters = [self.pndb.set_noise, self.pndb.set_transfer_func,
+                   self.pndb.set_combined_noise]
+        getters = [self.pndb.get_noise, self.pndb.get_transfer_func,
+                   self.pndb.get_combined_noise]
+        
+        for s in setters:
+            s(key, dummydata)
+        
+        for g in getters:
+            assert_frame_equal(dummydata, g(key))
+        
+        self.pndb.reflesh_all()
+        for g in getters:
+            self.assertRaises(KeyError, g, key)
+        
+    def test_noise_names(self):
+        dummydata = {'a':list(range(4)), 'b': np.zeros(10), 'c':np.ones(5)}
+        for key, val in dummydata.items():
+            self.pndb.set_noise(key, val)
+        self.assertEqual(self.pndb.get_noise_names(), dummydata.keys())
+
 @add_msg
-class TestCombineRead(unittest.TestCase):
-    """
+class TestCombineRead(UsingPNDataBase, unittest.TestCase):
+    '''
     This is the test for reading data of transfer function, phasenoise dadta,
     noise data.
-    """
+    '''
     # Message of calling to read the data.
     
-    def setUp(self):        
-        self.pndb = PNDataBase()
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
         self._set_ask_word()
         self._make_dummy_inputs()
     
-    def tearDown(self):
-        del self.pndb
-        """
-        Kill PNDataBase instance to reflesh data on each test because 
-        pndatabase is singleton.
-        """
-        
     def _set_ask_word(self):
         pn = Parameter_Names()
         self._reading_message_dict = pn.get_read_msg_dict()  
         self._reading_list = pn.get_reading_list()
         # Message of calling to read the data.
-    
 
     def _make_dummy_inputs(self):
         '''
@@ -260,32 +283,24 @@ class TestCombineRead(unittest.TestCase):
                                    self._inputdata[prmtr])
 
 
-@add_msg
-class TestCombineWrite(unittest.TestCase):
+@add_msg 
+class TestCombineWrite(UsingPNDataBase,unittest.TestCase):  
     """
     This is the test for reading data of transfer function, phasenoise dadta,
     noise data.
     """
     # Message of calling to read the data.
-    
-    def setUp(self):        
-        self.pndb = PNDataBase()
+
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
         self._set_ask_word()
         self._make_dummy_inputs()
-    
-    def tearDown(self):
-        del self.pndb
-        """
-        Kill PNDataBase instance to reflesh data on each test because 
-        pndatabase is singleton.
-        """
        
     def _set_ask_word(self):
         pn = Parameter_Names()
         self._writing_message_dict = pn.get_write_msg_dict()  
         self._writing_list = pn.get_writing_list()
         # Message of calling to read the data.
-        
 
     def _make_dummy_inputs(self):
         '''
@@ -299,7 +314,6 @@ class TestCombineWrite(unittest.TestCase):
         '''
         Test data is saved correctry.
         '''
-        
         with patch('src.dataio.csvio.CSVIO.write') as write_mock:
             
             for parameter, dummydata in self._inputdata.items():
@@ -316,6 +330,84 @@ class TestCombineWrite(unittest.TestCase):
                 args, kwargs =call
                 self.assertTrue(args[0]==self._writing_message_dict[key])
                 assert_frame_equal(args[1],data)
+
+class TestCombiningData(UsingPNDataBase,unittest.TestCase):
+    
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+        self._dummydatamng =DummyTransfuncNoiseData()
+        self.pnpm = PNPrmtrMng()
+        self.pnc = PNCombiner()
+        
+    
+    def _test_calc(self):
+        self.pnc = PNCalc()
+        self._dummydatamng.set_dummydata1()
+        collectdata = self._dummydatamng.set_data_and_get_value()
+        
+        self.pnc.execute()
+        assert_array_almost_equal(collectdata, 
+                                  self.pndb.get_combined_noise(self.pnpm.total))
+        
+    
+class DummyTransfuncNoiseData():
+    def __init__(self):
+        self.pnpm = PNPrmtrMng()
+    
+    def set_dummydata1(self):
+        self._make_dummy_pn_1()
+    
+    def set_data_and_get_value(self):
+        self._set_data()
+        return self.combined_noise
+    
+    def _set_data(self):
+        pndb = PNDataBase()
+        for key, noise in self.noise_set.items():
+            pndb.set_noise(key, noise)
             
+        for key, noise in self.tf_set.items():
+            pndb.set_transfer_func(key, noise)   
+    
+    def _make_dummy_pn_1(self):
+        self.noise_set ={}
+        self.tf_set = {}
+        
+        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000], 
+                      name = 'freq')
+        ref_noise = Series([-60, -90, -120, -150, -174, -174, -174, -174],
+                            name = 'phasenoise')
+        vco_noise = Series([20, -10, -40, -70, -100, -120, -140, -160],
+                            name = 'phasenoise')
+        MULT = 300
+        vco_tf = Series(np.ones(len(vco_noise))*MULT+0j, name = 'transgerfunc')
+        
+        _amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
+                         725.615560869816, 12.3726308452402, 1.00031528765996, 
+                         0.0588871802344158, 0.000723899599203854])
+        _rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
+                                    -179.204812606648, -172.099601076092, 
+                                    -126.297374340824, -101.982202912406, 
+                                    -144.636561700446, -175.919922754962]))
+        total_noise = Series([-10.4575748935194, -40.4575736967748, 
+                              -70.4574531198877, -100.436554942521, 
+                              -119.544591133846, -120.670402823308, 
+                              -139.069482677279, -159.985579375285], 
+                              name = 'pasenoise')
+
+        openloop_amp = Series(_amp*np.exp(1j*_rad), name = 'transferfunc')
+        # Make complex transfer function 
+
+        self.noise_set[self.pnpm.ref] = pd.concat([freq, ref_noise], axis = 1)
+        self.noise_set[self.pnpm.vco] = pd.concat([freq, vco_noise], axis = 1)
+        self.combined_noise= pd.concat([freq, total_noise], axis = 1)
+        
+        self.tf_set[self.pnpm.open_loop_gain] =\
+        pd.concat([freq, openloop_amp], axis = 1)
+        self.tf_set[self.pnpm.ref] = self.tf_set[self.pnpm.open_loop_gain] 
+        self.tf_set[self.pnpm.vco] = pd.concat([freq, vco_tf], axis = 1) 
+        
+        
+
 if __name__=='__main__':
     unittest.main()

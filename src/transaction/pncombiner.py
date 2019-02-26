@@ -86,21 +86,27 @@ class PNDataWriter(_PNDataIOCommon):
     
     def _set_io_setting(self):
         self._io_setting = self.pnpm.write_setting
-        pass
     
     def _do_io(self, parameter, message):
         data = self.pndb.get_combined_noise(parameter)     
         self.csvio.write(message, data)
 
 class PNCalc(Transaction):
+    def __init__(self):
+        self._pndb = PNDataBase()
+        pass
+        
     def execute(self):
+        pass
+    
+    def _get_data(self):
+        
         pass
 
 @singleton_decorator
 class PNDataBase():
     def __init__(self):
-        self._noise = {}
-        self._combined_noise = {}
+        self.reflesh_all()
     
     def set_noise(self, name, data):
         self._noise[name] = data
@@ -108,17 +114,25 @@ class PNDataBase():
     def get_noise(self, name):
         return self._noise[name]
     
-    def set_transfer_func(self):
-        pass
+    def get_noise_names(self):
+        return self._noise.keys()
     
-    def get_transfer_func(self):
-        pass
+    def set_transfer_func(self, name, data):
+        self._tf[name] = data
+    
+    def get_transfer_func(self, name):
+        return self._tf[name]
     
     def set_combined_noise(self, name, data):
         self._combined_noise[name] = data
     
     def get_combined_noise(self, name):
         return self._combined_noise[name]
+    
+    def reflesh_all(self):
+        self._noise = {}
+        self._tf = {}
+        self._combined_noise = {}
 
 
 @read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 

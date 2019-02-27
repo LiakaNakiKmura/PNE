@@ -88,6 +88,7 @@ class TestCombinePN(unittest.TestCase):
 
 @add_msg
 class TestPNparameter(unittest.TestCase):
+    
     def test_parameter_exist(self):
         '''
         Parameter class testing.
@@ -105,6 +106,26 @@ class TestPNparameter(unittest.TestCase):
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
 
+    def test_data_terms_exist(self):
+        '''
+        Parameter class testing.
+        Parameter is property, is string that is greater than 0 length and 
+        cannot be changed.
+        '''
+        pnpm = PNPrmtrMng()
+        
+        pn = Parameter_Names()
+        attrnames = pn.get_data_terms()
+        for n in attrnames:
+            parameter = getattr(pnpm,n)
+            self.assertTrue(isinstance(parameter, str))
+            self.assertTrue(0<len(parameter))
+            self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
+            # Raise error if property value is changed.
+            
+            pnpm.get_index(parameter, pn.data_index_freq)
+            pnpm.get_index(parameter, pn.data_index_value)
+            
     def test_file_message_exist(self):
         '''
         Test of Parameter message for reading data.
@@ -123,6 +144,7 @@ class TestPNparameter(unittest.TestCase):
                 prmtr_msg = pnpm.get_message(usage, prmtr)
                 self.assertTrue(isinstance(prmtr_msg, str))
                 self.assertTrue(0<len(prmtr_msg))
+        
 
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']
@@ -130,6 +152,10 @@ class Parameter_Names():
     _reading_lists = ['ref', 'vco', 'pd', 'open_loop_gain']
     _writing_msg_names = ['total']
     _writing_lists = ['total']
+    _data_terms = ['noise', 'tf', 'combpn']
+    data_index_freq = 'freq'
+    data_index_value = 'val'
+    # Data kinds for database.
     
     def __init__(self):
         self.pnpm = PNPrmtrMng()
@@ -142,6 +168,9 @@ class Parameter_Names():
 
     def get_write_msg_parameters(self):
         return self._writing_msg_names
+    
+    def get_data_terms(self):
+        return self._data_terms
     
     def get_read_msg_dict(self):
         prmtrs = [getattr(self.pnpm, n) for n in self._reading_msg_names]
@@ -157,6 +186,7 @@ class Parameter_Names():
     def get_writing_list(self):
         return [getattr(self.pnpm, name) for name in self._writing_lists]
     
+
       
 
 @add_msg
@@ -167,16 +197,17 @@ class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     _cls = PNDataBase
 
 
-class UsingPNDataBase:
+class UsingPNDataBase(object):
+    '''
+    Setting for data base 
+    '''
     def setUp(self):        
         self.pndb = PNDataBase()
     
     def tearDown(self):
         self.pndb.reflesh_all()
-        #del self.pndb
         '''
-        Kill PNDataBase instance to reflesh data on each test because 
-        pndatabase is singleton.
+        reflesh PNDataBase for next test.
         '''
 
 @add_msg  
@@ -203,6 +234,9 @@ class Test_database_detail(UsingPNDataBase, unittest.TestCase):
             # check the rewrite data
     
     def test_reflesh(self):
+        '''
+        Check the data is deleted after reflesh pndb.
+        '''
         dummydata = DataFrame(np.zeros((5,2))) 
         key = 'dummy data'
         setters = [self.pndb.set_noise, self.pndb.set_transfer_func,
@@ -221,6 +255,9 @@ class Test_database_detail(UsingPNDataBase, unittest.TestCase):
             self.assertRaises(KeyError, g, key)
         
     def test_noise_names(self):
+        '''
+        test getting noise names
+        '''
         dummydata = {'a':list(range(4)), 'b': np.zeros(10), 'c':np.ones(5)}
         for key, val in dummydata.items():
             self.pndb.set_noise(key, val)
@@ -331,6 +368,7 @@ class TestCombineWrite(UsingPNDataBase,unittest.TestCase):
                 self.assertTrue(args[0]==self._writing_message_dict[key])
                 assert_frame_equal(args[1],data)
 
+@add_msg 
 class TestCombiningData(UsingPNDataBase,unittest.TestCase):
     
     def setUp(self):
@@ -372,15 +410,19 @@ class DummyTransfuncNoiseData():
     def _make_dummy_pn_1(self):
         self.noise_set ={}
         self.tf_set = {}
+        freq_index = self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_freq)
+        noise_index =  self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_val)
+        tf_index =  self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)
+        combpn_index =  self.pnpm.get_index(self.pnpm.combpn, self.pnpm.index_type_val)
         
         freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000], 
-                      name = 'freq')
+                      name = freq_index)
         ref_noise = Series([-60, -90, -120, -150, -174, -174, -174, -174],
-                            name = 'phasenoise')
+                            name = noise_index)
         vco_noise = Series([20, -10, -40, -70, -100, -120, -140, -160],
-                            name = 'phasenoise')
+                            name = noise_index)
         MULT = 300
-        vco_tf = Series(np.ones(len(vco_noise))*MULT+0j, name = 'transgerfunc')
+        vco_tf = Series(np.ones(len(vco_noise))*MULT+0j, name = tf_index)
         
         _amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
                          725.615560869816, 12.3726308452402, 1.00031528765996, 
@@ -393,9 +435,9 @@ class DummyTransfuncNoiseData():
                               -70.4574531198877, -100.436554942521, 
                               -119.544591133846, -120.670402823308, 
                               -139.069482677279, -159.985579375285], 
-                              name = 'pasenoise')
+                              name = combpn_index)
 
-        openloop_amp = Series(_amp*np.exp(1j*_rad), name = 'transferfunc')
+        openloop_amp = Series(_amp*np.exp(1j*_rad), name = tf_index)
         # Make complex transfer function 
 
         self.noise_set[self.pnpm.ref] = pd.concat([freq, ref_noise], axis = 1)

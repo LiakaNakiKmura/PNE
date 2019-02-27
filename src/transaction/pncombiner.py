@@ -94,14 +94,31 @@ class PNDataWriter(_PNDataIOCommon):
 class PNCalc(Transaction):
     def __init__(self):
         self._pndb = PNDataBase()
+        self._pnpm = PNPrmtrMng()
         pass
         
     def execute(self):
+        self._get_data()
         pass
     
     def _get_data(self):
+        self._noise_names = self._pndb.get_noise_names()
+        self._opnlp = self.pndb.get_transfer_func(self._pnpm.open_loop_gain)
         
-        pass
+    def _do_calc(self):
+        '''
+        Output noise = Transfer func from 
+        '''
+        tf = self._opnlp[self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)]
+        cls_lp = 1/(1+tf)
+        noise_index =  self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_val)
+        tf_index =  self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)
+        combpn_index =  self.pnpm.get_index(self.pnpm.combpn, self.pnpm.index_type_val)
+        self._clslp_noise = {}
+        for name in self._noise_names:
+            self._clslp_noise[name] =\
+            cls_lp*self.pndb.get_noise(name)*self.pndb.get_transfer_func(name)
+        
 
 @singleton_decorator
 class PNDataBase():
@@ -139,6 +156,8 @@ class PNDataBase():
                              'pd':'phase_detector', 
                              'open_loop_gain': 'open_loop_gain',
                              'total': 'total_data'})
+@read_only_getter_decorator({'noise':'Noise', 'tf':'TransferFunction', 
+                             'combpn':'Combined Phase Noise'})
 class PNPrmtrMng():
     _reading_param_message_pairs = {
             'ref':'Please input reference phase noise.', 
@@ -149,12 +168,16 @@ class PNPrmtrMng():
     _writing_param_message_pairs = {
             'total':'Please write the total data'
             }
+    index_type_freq = 'freq'
+    _freq = 'frequency'
+    index_type_val = 'val'
     
     read_setting = 'r'
     write_setting = 'w'
     
     def __init__(self):
         self._make_message_dict()
+        self._make_index_name_list()
 
     def get_message(self, usage, parameter_name):
         return self._message_dict[usage][parameter_name]
@@ -170,3 +193,14 @@ class PNPrmtrMng():
         for usage, msg_pairs in usage_name_msg_pairs.items():
             self._message_dict[usage]=\
             {getattr(self, name): msg for name, msg in msg_pairs.items()}
+    
+    def _make_index_name_list(self):
+        self._index_name_lists = {self.tf:'Transfer function',
+                                  self.noise:'Occurred Noise',
+                                  self.combpn:'Output Phase Noise'}
+    
+    def get_index(self, data_type, index_type):
+        if index_type == self.index_type_freq:
+            return self._freq
+        elif index_type == self.index_type_val:
+            return self._index_name_lists[data_type]

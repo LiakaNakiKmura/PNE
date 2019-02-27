@@ -24,15 +24,17 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 # Original module
 
+
+# Target class
+from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
+                                        PNCalc, PNDataBase, PNPrmtrMng,
+                                        IndivDataBase)
+
 # utlities.
 from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 from test_utility import (Signletone_test_base, Inheration_test_base)
-
-# Target class
-
-from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
-                                        PNCalc, PNDataBase, PNPrmtrMng)
+from test_interface import TestForMethodExist
 
 # interface
 from src.interface.intfc_com import (Transaction, Reader, Writer)
@@ -85,6 +87,15 @@ class TestCombinePN(unittest.TestCase):
                       'get_combined_noise')
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
+
+@add_msg
+class TestIndivisualDataBase(TestForMethodExist, unittest.TestCase):
+    _class_method_pairs=((IndivDataBase,'set_data'),
+                         (IndivDataBase,'get_data')
+                         )
+    _class_attr_pairs = ((IndivDataBase, 'index_freq'),
+                         (IndivDataBase, 'index_val')
+                         )
 
 @add_msg
 class TestPNparameter(unittest.TestCase):

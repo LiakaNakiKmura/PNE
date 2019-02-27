@@ -151,6 +151,18 @@ class PNDataBase():
         self._tf = {}
         self._combined_noise = {}
 
+class IndivDataBase(metaclass = abc.ABCMeta):
+    index_freq = ''
+    index_val = ''
+    
+    abc.abstractmethod
+    def set_data(self, name, data):
+        pass
+    
+    abc.abstractmethod
+    def get_data(self, name):
+        pass
+
 
 @read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 
                              'pd':'phase_detector', 

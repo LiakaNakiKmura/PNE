@@ -44,8 +44,5 @@ class TestCombinePN(TestForMethodExist, unittest.TestCase):
                          (PathAsk,'get_path')                   
                          )
 
-
-    
-
 if __name__=='__main__':
     unittest.main()

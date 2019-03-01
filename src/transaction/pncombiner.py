@@ -88,7 +88,7 @@ class PNDataWriter(_PNDataIOCommon):
         self._io_setting = self.pnpm.write_setting
     
     def _do_io(self, parameter, message):
-        data = self.pndb.get_combined_noise(parameter)     
+        data = self.pndb.get_closeloop_noise(parameter)     
         self.csvio.write(message, data)
 
 class PNCalc(Transaction):
@@ -140,10 +140,10 @@ class PNDataBase():
     def get_transfer_func(self, name):
         return self._tf[name]
     
-    def set_combined_noise(self, name, data):
+    def set_closeloop_noise(self, name, data):
         self._combined_noise[name] = data
     
-    def get_combined_noise(self, name):
+    def get_closeloop_noise(self, name):
         return self._combined_noise[name]
     
     def reflesh_all(self):
@@ -151,17 +151,7 @@ class PNDataBase():
         self._tf = {}
         self._combined_noise = {}
 
-class IndivDataBase(metaclass = abc.ABCMeta):
-    index_freq = ''
-    index_val = ''
-    
-    abc.abstractmethod
-    def set_data(self, name, data):
-        pass
-    
-    abc.abstractmethod
-    def get_data(self, name):
-        pass
+
 
 
 @read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 
@@ -181,7 +171,7 @@ class PNPrmtrMng():
             'total':'Please write the total data'
             }
     index_type_freq = 'freq'
-    _freq = 'frequency'
+    index_freq = 'frequency'
     index_type_val = 'val'
     
     read_setting = 'r'
@@ -213,6 +203,58 @@ class PNPrmtrMng():
     
     def get_index(self, data_type, index_type):
         if index_type == self.index_type_freq:
-            return self._freq
+            return self.index_freq
         elif index_type == self.index_type_val:
             return self._index_name_lists[data_type]
+
+
+class IndivDataBase(metaclass = abc.ABCMeta):
+    index_freq = ''
+    index_val = ''
+    def __init__(self):
+        pass
+    
+    abc.abstractmethod
+    def set_data(self, name, data):
+        pass
+    
+    abc.abstractmethod
+    def get_data(self, name):
+        pass
+    
+    
+@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+                             'index_val':'Noise'})
+class NoiseDataBase(IndivDataBase):
+    def __init__(self):
+        self.pndb = PNDataBase()
+    
+    def set_data(self, name, data):
+        self.pndb.set_noise(name, data)
+    
+    def get_data(self, name):
+        return self.pndb.get_noise(name)
+
+@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+                             'index_val':'Transfer function'})
+class TransferfuncDataBase(IndivDataBase):
+    def __init__(self):
+        self.pndb = PNDataBase()
+    
+    def set_data(self, name, data):
+        self.pndb.set_transfer_func(name, data)
+    
+    def get_data(self, name):
+        return self.pndb.get_transfer_func(name)
+
+@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+                             'index_val':'Close loop data'})
+class CloseLoopDataBase(IndivDataBase):
+    def __init__(self):
+        self.pndb = PNDataBase()
+    
+    def set_data(self, name, data):
+        self.pndb.set_closeloop_noise(name, data)
+    
+    def get_data(self, name):
+        return self.pndb.get_closeloop_noise(name)

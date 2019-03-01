@@ -28,7 +28,9 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
                                         PNCalc, PNDataBase, PNPrmtrMng,
-                                        IndivDataBase)
+                                        IndivDataBase, NoiseDataBase,
+                                        TransferfuncDataBase, 
+                                        CloseLoopDataBase)
 
 # utlities.
 from context import src # path setting
@@ -44,6 +46,18 @@ import src.interface.intfc_com as intfc_com
 # tool class
 from src.dataio.csvio import (CSVIO)
 
+class UsingPNDataBase(object):
+    '''
+    Setting for data base 
+    '''
+    def setUp(self):        
+        self.pndb = PNDataBase()
+    
+    def tearDown(self):
+        self.pndb.reflesh_all()
+        '''
+        reflesh PNDataBase for next test.
+        '''
 
 @add_msg
 class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
@@ -51,7 +65,8 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
     _sub_sup_class_pairs = ((PNCombiner, Transaction),
                                (PNDataReader, Transaction),
                                (PNDataWriter, Transaction),
-                               (PNCalc, Transaction)
+                               (PNCalc, Transaction),
+                               (NoiseDataBase, IndivDataBase)
                                )
 
 
@@ -83,19 +98,86 @@ class TestCombinePN(unittest.TestCase):
     def test_database_method(self):
         # Test interface has abstract method.
         method_names=('set_noise','get_noise', 'set_transfer_func',
-                      'get_transfer_func', 'set_combined_noise',
-                      'get_combined_noise')
+                      'get_transfer_func', 'set_closeloop_noise',
+                      'get_closeloop_noise')
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
 
 @add_msg
-class TestIndivisualDataBase(TestForMethodExist, unittest.TestCase):
+class TestIndivisualDataBaseFuncExists(TestForMethodExist, unittest.TestCase):
     _class_method_pairs=((IndivDataBase,'set_data'),
                          (IndivDataBase,'get_data')
                          )
     _class_attr_pairs = ((IndivDataBase, 'index_freq'),
                          (IndivDataBase, 'index_val')
                          )
+
+@add_msg    
+class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
+    # Test inheration of interfaces.
+    _sub_sup_class_pairs = ((NoiseDataBase, IndivDataBase),
+                            (TransferfuncDataBase, IndivDataBase),
+                            (CloseLoopDataBase,  IndivDataBase)
+                            )
+
+class IndivDataBaseSetGetChk(UsingPNDataBase):
+    '''
+    This test uses pndb.
+    UsingPNDataBase manage the pndb because this is singleton.
+    '''
+    
+    _class_for_test = NoiseDataBase
+    _getter_for_pndb = 'get_data'
+    def test_datasetting(self):
+        '''
+        test set data to indivisual database is reflected to PNDataBase. 
+        '''
+        ndb = self._class_for_test()
+        
+        data = self._make_dummy_data()
+        name = 'sample'
+        
+        ndb.set_data(name, data)
+        getter = getattr(self.pndb, self._getter_for_pndb)
+        
+        assert_frame_equal(getter(name), data)
+    
+    def test_dual_database(self):
+        '''
+        test set data to one of indivisual database instance is reflected to
+        another indivisual database instance. 
+        '''
+        ndb1 = self._class_for_test()
+        ndb2 = self._class_for_test()
+        
+        data = self._make_dummy_data()
+        name = 'sample'
+        
+        ndb1.set_data(name, data)
+        assert_frame_equal(ndb2.get_data(name), data)
+    
+    def _make_dummy_data(self):
+        ndb = self._class_for_test()
+        freq = Series([10**i for i in range(9)], name = ndb.index_freq)
+        val = Series([max((-60-20*i, -173)) for i in range(9)], 
+                       name = ndb.index_val)
+        data_pairs = pd.concat([freq, val], axis = 1)
+        return data_pairs
+
+@add_msg  
+class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
+    _class_for_test = NoiseDataBase
+    _getter_for_pndb = 'get_noise'
+
+@add_msg  
+class TestTransferFuncDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
+    _class_for_test = TransferfuncDataBase
+    _getter_for_pndb = 'get_transfer_func'       
+
+@add_msg  
+class CloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
+    _class_for_test = CloseLoopDataBase
+    _getter_for_pndb = 'get_closeloop_noise'     
 
 @add_msg
 class TestPNparameter(unittest.TestCase):
@@ -207,20 +289,6 @@ class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):
     """
     _cls = PNDataBase
 
-
-class UsingPNDataBase(object):
-    '''
-    Setting for data base 
-    '''
-    def setUp(self):        
-        self.pndb = PNDataBase()
-    
-    def tearDown(self):
-        self.pndb.reflesh_all()
-        '''
-        reflesh PNDataBase for next test.
-        '''
-
 @add_msg  
 class Test_database_detail(UsingPNDataBase, unittest.TestCase):
     def test_database_inputput(self):
@@ -251,9 +319,9 @@ class Test_database_detail(UsingPNDataBase, unittest.TestCase):
         dummydata = DataFrame(np.zeros((5,2))) 
         key = 'dummy data'
         setters = [self.pndb.set_noise, self.pndb.set_transfer_func,
-                   self.pndb.set_combined_noise]
+                   self.pndb.set_closeloop_noise]
         getters = [self.pndb.get_noise, self.pndb.get_transfer_func,
-                   self.pndb.get_combined_noise]
+                   self.pndb.get_closeloop_noise]
         
         for s in setters:
             s(key, dummydata)
@@ -365,7 +433,7 @@ class TestCombineWrite(UsingPNDataBase,unittest.TestCase):
         with patch('src.dataio.csvio.CSVIO.write') as write_mock:
             
             for parameter, dummydata in self._inputdata.items():
-                self.pndb.set_combined_noise(parameter, dummydata)
+                self.pndb.set_closeloop_noise(parameter, dummydata)
             
             pndatawriter = PNDataWriter()
             pndatawriter.execute()
@@ -396,7 +464,7 @@ class TestCombiningData(UsingPNDataBase,unittest.TestCase):
         
         self.pnc.execute()
         assert_array_almost_equal(collectdata, 
-                                  self.pndb.get_combined_noise(self.pnpm.total))
+                                  self.pndb.get_closeloop_noise(self.pnpm.total))
         
     
 class DummyTransfuncNoiseData():

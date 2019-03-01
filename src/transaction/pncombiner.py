@@ -170,16 +170,13 @@ class PNPrmtrMng():
     _writing_param_message_pairs = {
             'total':'Please write the total data'
             }
-    index_type_freq = 'freq'
     index_freq = 'frequency'
-    index_type_val = 'val'
     
     read_setting = 'r'
     write_setting = 'w'
     
     def __init__(self):
         self._make_message_dict()
-        self._make_index_name_list()
 
     def get_message(self, usage, parameter_name):
         return self._message_dict[usage][parameter_name]
@@ -195,66 +192,44 @@ class PNPrmtrMng():
         for usage, msg_pairs in usage_name_msg_pairs.items():
             self._message_dict[usage]=\
             {getattr(self, name): msg for name, msg in msg_pairs.items()}
-    
-    def _make_index_name_list(self):
-        self._index_name_lists = {self.tf:'Transfer function',
-                                  self.noise:'Occurred Noise',
-                                  self.combpn:'Output Phase Noise'}
-    
-    def get_index(self, data_type, index_type):
-        if index_type == self.index_type_freq:
-            return self.index_freq
-        elif index_type == self.index_type_val:
-            return self._index_name_lists[data_type]
-
 
 class IndivDataBase(metaclass = abc.ABCMeta):
+    '''
+    Data Base interface for each data. Ex noise, transfer function...
+    This has index name variables. 
+    getter and setter is get_data and set_data.
+    '''
     index_freq = ''
     index_val = ''
+    _getter_attr_for_pndb = 'get_data'
+    _setter_attr_for_pndb = 'set_data'
+    
     def __init__(self):
-        pass
+        pndb = PNDataBase()
+        self._getter = getattr(pndb, self._getter_attr_for_pndb)
+        self._setter = getattr(pndb, self._setter_attr_for_pndb)
+    
+    def get_data(self, name):
+        return self._getter(name)
     
     abc.abstractmethod
     def set_data(self, name, data):
-        pass
-    
-    abc.abstractmethod
-    def get_data(self, name):
-        pass
-    
+        return self._setter(name, data)
     
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Noise'})
 class NoiseDataBase(IndivDataBase):
-    def __init__(self):
-        self.pndb = PNDataBase()
-    
-    def set_data(self, name, data):
-        self.pndb.set_noise(name, data)
-    
-    def get_data(self, name):
-        return self.pndb.get_noise(name)
+    _getter_attr_for_pndb = 'get_noise'
+    _setter_attr_for_pndb = 'set_noise'
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Transfer function'})
-class TransferfuncDataBase(IndivDataBase):
-    def __init__(self):
-        self.pndb = PNDataBase()
-    
-    def set_data(self, name, data):
-        self.pndb.set_transfer_func(name, data)
-    
-    def get_data(self, name):
-        return self.pndb.get_transfer_func(name)
+class TransferfuncDataBase(IndivDataBase):  
+    _getter_attr_for_pndb = 'get_transfer_func' 
+    _setter_attr_for_pndb = 'set_transfer_func' 
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Close loop data'})
 class CloseLoopDataBase(IndivDataBase):
-    def __init__(self):
-        self.pndb = PNDataBase()
-    
-    def set_data(self, name, data):
-        self.pndb.set_closeloop_noise(name, data)
-    
-    def get_data(self, name):
-        return self.pndb.get_closeloop_noise(name)
+    _getter_attr_for_pndb = 'get_closeloop_noise'
+    _setter_attr_for_pndb = 'set_closeloop_noise'

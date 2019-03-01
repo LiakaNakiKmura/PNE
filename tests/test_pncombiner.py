@@ -175,7 +175,7 @@ class TestTransferFuncDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _getter_for_pndb = 'get_transfer_func'       
 
 @add_msg  
-class CloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
+class TestCloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _class_for_test = CloseLoopDataBase
     _getter_for_pndb = 'get_closeloop_noise'     
 
@@ -198,27 +198,7 @@ class TestPNparameter(unittest.TestCase):
             self.assertTrue(0<len(prmtr))
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
-
-    def test_data_terms_exist(self):
-        '''
-        Parameter class testing.
-        Parameter is property, is string that is greater than 0 length and 
-        cannot be changed.
-        '''
-        pnpm = PNPrmtrMng()
         
-        pn = Parameter_Names()
-        attrnames = pn.get_data_terms()
-        for n in attrnames:
-            parameter = getattr(pnpm,n)
-            self.assertTrue(isinstance(parameter, str))
-            self.assertTrue(0<len(parameter))
-            self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
-            # Raise error if property value is changed.
-            
-            pnpm.get_index(parameter, pn.data_index_freq)
-            pnpm.get_index(parameter, pn.data_index_value)
-            
     def test_file_message_exist(self):
         '''
         Test of Parameter message for reading data.
@@ -245,9 +225,6 @@ class Parameter_Names():
     _reading_lists = ['ref', 'vco', 'pd', 'open_loop_gain']
     _writing_msg_names = ['total']
     _writing_lists = ['total']
-    _data_terms = ['noise', 'tf', 'combpn']
-    data_index_freq = 'freq'
-    data_index_value = 'val'
     # Data kinds for database.
     
     def __init__(self):
@@ -261,9 +238,6 @@ class Parameter_Names():
 
     def get_write_msg_parameters(self):
         return self._writing_msg_names
-    
-    def get_data_terms(self):
-        return self._data_terms
     
     def get_read_msg_dict(self):
         prmtrs = [getattr(self.pnpm, n) for n in self._reading_msg_names]

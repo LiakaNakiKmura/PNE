@@ -120,6 +120,7 @@ class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
                             (CloseLoopDataBase,  IndivDataBase)
                             )
 
+
 class IndivDataBaseSetGetChk(UsingPNDataBase):
     '''
     This test uses pndb.
@@ -132,12 +133,12 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         '''
         test set data to indivisual database is reflected to PNDataBase. 
         '''
-        ndb = self._class_for_test()
+        test_db = self._class_for_test()
         
         data = self._make_dummy_data()
         name = 'sample'
         
-        ndb.set_data(name, data)
+        test_db.set_data(name, data)
         getter = getattr(self.pndb, self._getter_for_pndb)
         
         assert_frame_equal(getter(name), data)
@@ -168,6 +169,15 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _class_for_test = NoiseDataBase
     _getter_for_pndb = 'get_noise'
+    def test_noise_names(self):
+        '''
+        test getting noise names
+        '''
+        test_db = self._class_for_test()
+        dummydata = {'a':list(range(4)), 'b': np.zeros(10), 'c':np.ones(5)}
+        for key, val in dummydata.items():
+            test_db.set_data(key, val)
+        self.assertEqual(test_db.get_names(), dummydata.keys())
 
 @add_msg  
 class TestTransferFuncDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
@@ -431,7 +441,7 @@ class TestCombiningData(UsingPNDataBase,unittest.TestCase):
         self.pnc = PNCombiner()
         
     
-    def _test_calc(self):
+    def test_calc(self):
         self.pnc = PNCalc()
         self._dummydatamng.set_dummydata1()
         collectdata = self._dummydatamng.set_data_and_get_value()
@@ -445,64 +455,61 @@ class DummyTransfuncNoiseData():
     def __init__(self):
         self.pnpm = PNPrmtrMng()
     
-    def set_dummydata1(self):
-        self._make_dummy_pn_1()
-    
     def set_data_and_get_value(self):
-        self._set_data()
         return self.combined_noise
     
-    def _set_data(self):
-        pndb = PNDataBase()
-        for key, noise in self.noise_set.items():
-            pndb.set_noise(key, noise)
-            
-        for key, noise in self.tf_set.items():
-            pndb.set_transfer_func(key, noise)   
+    def _set_dataset(self, freq, noise, tf, name):
+        self._set_dummy_to_db(NoiseDataBase, freq, noise, name)
+        self._set_dummy_to_db(TransferfuncDataBase, freq, tf, name)
     
-    def _make_dummy_pn_1(self):
-        self.noise_set ={}
-        self.tf_set = {}
-        freq_index = self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_freq)
-        noise_index =  self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_val)
-        tf_index =  self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)
-        combpn_index =  self.pnpm.get_index(self.pnpm.combpn, self.pnpm.index_type_val)
-        
-        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000], 
-                      name = freq_index)
-        ref_noise = Series([-60, -90, -120, -150, -174, -174, -174, -174],
-                            name = noise_index)
-        vco_noise = Series([20, -10, -40, -70, -100, -120, -140, -160],
-                            name = noise_index)
+    def _set_dummy_to_db(self, DataBase, freq_data, value_data, name):
+        db =DataBase()
+        dummy_data = pd.concat((freq_data, value_data), axis = 1)
+        dummy_data.columns = [db.index_freq, db.index_val]
+        db.set_data(name, dummy_data)    
+    
+    def set_dummydata1(self):
+        self._set_ref_1()
+        self._set_vco_1()
+        self._set_combined_1()
+        pass
+    
+    def _openloop1(self):
+        amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
+                        725.615560869816, 12.3726308452402, 1.00031528765996, 
+                        0.0588871802344158, 0.000723899599203854])
+        rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
+                                   -179.204812606648, -172.099601076092, 
+                                   -126.297374340824, -101.982202912406, 
+                                   -144.636561700446, -175.919922754962]))
+        return Series(amp*np.exp(1j*rad))
+
+    def _set_ref_1(self):
+        noise = Series([-60, -90, -120, -150, -174, -174, -174, -174])
+        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
         MULT = 300
-        vco_tf = Series(np.ones(len(vco_noise))*MULT+0j, name = tf_index)
-        
-        _amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
-                         725.615560869816, 12.3726308452402, 1.00031528765996, 
-                         0.0588871802344158, 0.000723899599203854])
-        _rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
-                                    -179.204812606648, -172.099601076092, 
-                                    -126.297374340824, -101.982202912406, 
-                                    -144.636561700446, -175.919922754962]))
+        tf = self._openloop1()*MULT
+        self._set_dataset(freq, noise, tf, self.pnpm.ref)
+    
+    def _set_vco_1(self):
+        noise = Series([20, -10, -40, -70, -100, -120, -140, -160])
+        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
+        tf = Series(np.ones(len(noise))+0j)
+        self._set_dataset(freq, noise, tf, self.pnpm.vco)
+    
+    def _set_combined_1(self):
         total_noise = Series([-10.4575748935194, -40.4575736967748, 
                               -70.4574531198877, -100.436554942521, 
                               -119.544591133846, -120.670402823308, 
-                              -139.069482677279, -159.985579375285], 
-                              name = combpn_index)
-
-        openloop_amp = Series(_amp*np.exp(1j*_rad), name = tf_index)
-        # Make complex transfer function 
-
-        self.noise_set[self.pnpm.ref] = pd.concat([freq, ref_noise], axis = 1)
-        self.noise_set[self.pnpm.vco] = pd.concat([freq, vco_noise], axis = 1)
+                              -139.069482677279, -159.985579375285])
+        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
+        db = CloseLoopDataBase()
+        
         self.combined_noise= pd.concat([freq, total_noise], axis = 1)
+        self.combined_noise.columns = [db.index_freq, db.index_val]
         
-        self.tf_set[self.pnpm.open_loop_gain] =\
-        pd.concat([freq, openloop_amp], axis = 1)
-        self.tf_set[self.pnpm.ref] = self.tf_set[self.pnpm.open_loop_gain] 
-        self.tf_set[self.pnpm.vco] = pd.concat([freq, vco_tf], axis = 1) 
-        
-        
+        self._set_dummy_to_db(TransferfuncDataBase, freq, self._openloop1(),
+                              self.pnpm.open_loop_gain)
 
 if __name__=='__main__':
     unittest.main()

@@ -9,7 +9,8 @@ Created on Thu Jan 31 20:43:04 2019
 import abc
 
 # 3rd party's module
-
+import numpy as np
+import pandas as pd
 
 # Original module  
 
@@ -18,6 +19,7 @@ from src.interface.intfc_com import Transaction
 
 #utilities
 from src.utility.utility import singleton_decorator, read_only_getter_decorator
+from src.utility.calc import MagLogUtil
 from src.dataio.csvio import CSVIO
 
 
@@ -93,31 +95,46 @@ class PNDataWriter(_PNDataIOCommon):
 
 class PNCalc(Transaction):
     def __init__(self):
-        self._pndb = PNDataBase()
-        self._pnpm = PNPrmtrMng()
-        pass
+        self._ndb = NoiseDataBase()
+        self._tfdb = TransferfuncDataBase()
+        self._cldb = CloseLoopDataBase()
+        self.mlu = MagLogUtil()
+        self.pnpm = PNPrmtrMng()
         
     def execute(self):
         self._get_data()
-        pass
+        self._do_calc()
     
     def _get_data(self):
-        self._noise_names = self._pndb.get_noise_names()
-        self._opnlp = self.pndb.get_transfer_func(self._pnpm.open_loop_gain)
-        
+        self._noise_names = self._ndb.get_names()
+        self._noises = self._get_datalist(self._ndb)
+        self._tfs = self._get_datalist(self._tfdb)
+        self._opnlp = self._tfdb.get_data(self.pnpm.open_loop_gain)
+    
+    def _get_datalist(self, database):
+        return {name: database.get_data(name) for name in self._noise_names}
+    
     def _do_calc(self):
         '''
         Output noise = Transfer func from 
         '''
-        tf = self._opnlp[self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)]
-        cls_lp = 1/(1+tf)
-        noise_index =  self.pnpm.get_index(self.pnpm.noise, self.pnpm.index_type_val)
-        tf_index =  self.pnpm.get_index(self.pnpm.tf, self.pnpm.index_type_val)
-        combpn_index =  self.pnpm.get_index(self.pnpm.combpn, self.pnpm.index_type_val)
-        self._clslp_noise = {}
+        self._closelp =1/(1+self._opnlp[self._tfdb.index_val])
+        self._closed_pn = {}
         for name in self._noise_names:
-            self._clslp_noise[name] =\
-            cls_lp*self.pndb.get_noise(name)*self.pndb.get_transfer_func(name)
+            
+            filter_compression_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
+            filter_compression_log = self.mlu.mag2log(abs(filter_compression_mag),20)
+            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
+            + filter_compression_log
+        
+        total_pn_val = np.array([-1e10 for _ in range(len(self._closelp))])
+        for pn in self._closed_pn.values():
+            add_pn =  self.mlu.log2mag(pn, N = 10)
+            tota_pn_buf = self.mlu.log2mag(total_pn_val, 10)
+            total_pn_val = self.mlu.mag2log(add_pn+tota_pn_buf, N = 10)
+        total_pn = pd.concat([self._opnlp[self._tfdb.index_freq], total_pn_val],
+                              axis = 1)
+        self._cldb.set_data(self.pnpm.total, total_pn)
         
 
 @singleton_decorator
@@ -150,8 +167,6 @@ class PNDataBase():
         self._noise = {}
         self._tf = {}
         self._combined_noise = {}
-
-
 
 
 @read_only_getter_decorator({'ref':'reference', 'vco':'VCO', 
@@ -205,9 +220,9 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     _setter_attr_for_pndb = 'set_data'
     
     def __init__(self):
-        pndb = PNDataBase()
-        self._getter = getattr(pndb, self._getter_attr_for_pndb)
-        self._setter = getattr(pndb, self._setter_attr_for_pndb)
+        self.pndb = PNDataBase()
+        self._getter = getattr(self.pndb, self._getter_attr_for_pndb)
+        self._setter = getattr(self.pndb, self._setter_attr_for_pndb)
     
     def get_data(self, name):
         return self._getter(name)
@@ -221,6 +236,9 @@ class IndivDataBase(metaclass = abc.ABCMeta):
 class NoiseDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_noise'
     _setter_attr_for_pndb = 'set_noise'
+    
+    def get_names(self):
+        return self.pndb.get_noise_names()
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Transfer function'})

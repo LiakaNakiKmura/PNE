@@ -218,6 +218,7 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     index_val = ''
     _getter_attr_for_pndb = 'get_data'
     _setter_attr_for_pndb = 'set_data'
+    _index_max_length = 2
     
     def __init__(self):
         self.pndb = PNDataBase()
@@ -227,9 +228,14 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     def get_data(self, name):
         return self._getter(name)
     
-    abc.abstractmethod
     def set_data(self, name, data):
-        return self._setter(name, data)
+        new_name, new_data = self._validation(name, data)
+        return self._setter(new_name, new_data)
+    
+    def _validation(self, name, data):
+        if len(data.columns) > self._index_max_length:
+            return (name, data.iloc[:, :self._index_max_length])
+        return (name, data)
     
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Noise'})
@@ -245,6 +251,21 @@ class NoiseDataBase(IndivDataBase):
 class TransferfuncDataBase(IndivDataBase):  
     _getter_attr_for_pndb = 'get_transfer_func' 
     _setter_attr_for_pndb = 'set_transfer_func' 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mlu = MagLogUtil()
+    
+    def set_mag_deg_data(self, name, data):
+        '''
+        data has following columns.
+        (freq, amplitude, angular)
+        '''
+        freq = data.iloc[:, 0]
+        amplitude = data.iloc[:, 1]
+        degree = data.iloc[:, 2]
+        transferfunc = self.mlu.magdeg2comp(amplitude, degree)
+        new_data = pd.concat([freq, transferfunc], axis = 1)
+        self.set_data(name, new_data)
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Close loop data'})

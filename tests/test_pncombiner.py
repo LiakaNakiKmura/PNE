@@ -127,13 +127,13 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
     UsingPNDataBase manage the pndb because this is singleton.
     '''
     
-    _class_for_test = NoiseDataBase
+    _ClassForTest = NoiseDataBase
     _getter_for_pndb = 'get_data'
     def test_datasetting(self):
         '''
         test set data to indivisual database is reflected to PNDataBase. 
         '''
-        test_db = self._class_for_test()
+        test_db = self._ClassForTest()
         
         data = self._make_dummy_data()
         name = 'sample'
@@ -148,46 +148,87 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         test set data to one of indivisual database instance is reflected to
         another indivisual database instance. 
         '''
-        ndb1 = self._class_for_test()
-        ndb2 = self._class_for_test()
+        database1 = self._ClassForTest()
+        database2 = self._ClassForTest()
         
         data = self._make_dummy_data()
         name = 'sample'
         
-        ndb1.set_data(name, data)
-        assert_frame_equal(ndb2.get_data(name), data)
+        database1.set_data(name, data)
+        assert_frame_equal(database2.get_data(name), data)
+    
+    def test_column_length(self):
+        '''
+        Data must be sets of freq and its value.
+        If data column length is greater than 2.
+        '''
+        test_database = self._ClassForTest()
+        
+        data_length =10
+        S1 = Series(np.ones(data_length), name = test_database.index_freq)
+        S2 = Series(np.zeros(data_length), name = test_database.index_val)
+        S3 = Series(np.random.rand(data_length)*(-170), name = 'unnecessary data')
+        # random number from -170 to 0
+        
+        dummy_input = pd.concat([S1, S2, S3], axis = 1) 
+        dummy_output = pd.concat([S1, S2], axis = 1)
+        name = 'dummydata'
+        
+        test_database.set_data(name, dummy_input)
+        assert_frame_equal(dummy_output, test_database.get_data(name))
+        
     
     def _make_dummy_data(self):
-        ndb = self._class_for_test()
-        freq = Series([10**i for i in range(9)], name = ndb.index_freq)
+        test_database = self._ClassForTest()
+        freq = Series([10**i for i in range(9)], name = test_database.index_freq)
         val = Series([max((-60-20*i, -173)) for i in range(9)], 
-                       name = ndb.index_val)
+                       name = test_database.index_val)
         data_pairs = pd.concat([freq, val], axis = 1)
         return data_pairs
 
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
-    _class_for_test = NoiseDataBase
+    _ClassForTest = NoiseDataBase
     _getter_for_pndb = 'get_noise'
     def test_noise_names(self):
         '''
         test getting noise names
         '''
-        test_db = self._class_for_test()
-        dummydata = {'a':list(range(4)), 'b': np.zeros(10), 'c':np.ones(5)}
+        data_size = [2,5]
+        
+        test_db = self._ClassForTest()
+        dummydata = {'a': DataFrame(np.random.rand(*data_size)),
+                     'b': DataFrame(np.zeros(data_size)),
+                     'c': DataFrame(np.ones(data_size))}
+        
         for key, val in dummydata.items():
             test_db.set_data(key, val)
         self.assertEqual(test_db.get_names(), dummydata.keys())
 
 @add_msg  
 class TestTransferFuncDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
-    _class_for_test = TransferfuncDataBase
+    _ClassForTest = TransferfuncDataBase
     _getter_for_pndb = 'get_transfer_func'       
+    def test_set_mag_deg_data(self):
+        test_database = self._ClassForTest()
+        amp = [0, 1, 1, 10, 2]
+        deg = [0, 180, 90, 540, 30]
+        freq = [10**i for i in range(len(amp))]
+        combined = [0+0j, -1+0j, 0+1j, -10+0j, 3**(1/2)+1j]
+        name = 'dummy_input'
+        
+        input_data = DataFrame([freq, amp, deg]).T# Transpose
+        output_data = DataFrame([freq, combined]).T
+        
+        test_database.set_mag_deg_data(name, input_data)
+        assert_array_almost_equal(output_data, test_database.get_data(name))
 
 @add_msg  
 class TestCloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
-    _class_for_test = CloseLoopDataBase
-    _getter_for_pndb = 'get_closeloop_noise'     
+    _ClassForTest = CloseLoopDataBase
+    _getter_for_pndb = 'get_closeloop_noise'
+    
+        
 
 @add_msg
 class TestPNparameter(unittest.TestCase):
@@ -262,9 +303,6 @@ class Parameter_Names():
     
     def get_writing_list(self):
         return [getattr(self.pnpm, name) for name in self._writing_lists]
-    
-
-      
 
 @add_msg
 class Test_database_as_singleton(Signletone_test_base, unittest.TestCase):

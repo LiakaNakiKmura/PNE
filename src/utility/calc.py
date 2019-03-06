@@ -11,6 +11,7 @@ import numbers
 # 3rd party's module
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 
 # Original module  
 
@@ -41,4 +42,8 @@ class MagLogUtil():
     
     def magdeg2comp(self, mag, deg):
         return mag*np.exp(np.deg2rad(deg)*1j)
-        
+    
+    def ylogx_interpolite(self, x, y, *args, **kwargs):
+        log10x = np.log10(x)
+        interpolite = interp1d(log10x, y, *args, **kwargs)
+        return lambda x_new : interpolite(np.log10(x_new))

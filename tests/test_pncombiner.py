@@ -156,6 +156,14 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         
         database1.set_data(name, data)
         assert_frame_equal(database2.get_data(name), data)
+
+    def _make_dummy_data(self):
+        test_database = self._ClassForTest()
+        freq = Series([10**i for i in range(9)], name = test_database.index_freq)
+        val = Series([max(-60-20*i, -173) for i in range(9)], 
+                       name = test_database.index_val)
+        data_pairs = pd.concat([freq, val], axis = 1)
+        return data_pairs
     
     def test_column_length(self):
         '''
@@ -173,18 +181,50 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         dummy_input = pd.concat([S1, S2, S3], axis = 1) 
         dummy_output = pd.concat([S1, S2], axis = 1)
         name = 'dummydata'
+        one_length_data = DataFrame(S1)
         
         test_database.set_data(name, dummy_input)
         assert_frame_equal(dummy_output, test_database.get_data(name))
-        
+        self.assertRaises(TypeError, test_database.set_data, name, S1)
+        # Only DataFrame can be used
+        self.assertRaises(ValueError, test_database.set_data, 
+                          name, one_length_data)
     
-    def _make_dummy_data(self):
+
+
+    def test_read_data_wt_freq_set(self):
+        '''
+        if freq range is set when get_data, return value is Linear interpolated
+        with value vs log freq.
+        '''
         test_database = self._ClassForTest()
-        freq = Series([10**i for i in range(9)], name = test_database.index_freq)
-        val = Series([max((-60-20*i, -173)) for i in range(9)], 
-                       name = test_database.index_val)
-        data_pairs = pd.concat([freq, val], axis = 1)
-        return data_pairs
+        length = 10
+        index_pairs = [test_database.index_freq, test_database.index_val]
+        
+        freq1 = [10.**(2*i) for i in range(int(length/2))]
+        val1 = [-60.-20*i*2 for i in range(int(length/2))]
+        freq2 = [10.**(i) for i in range(length-1)]
+        val2 = [-60.-20*i for i in range(length-1)]
+        
+        dummy_input = DataFrame([freq1, val1]).T
+        dummy_input.columns = index_pairs
+        
+        dummy_output = DataFrame([freq2, val2]).T
+        dummy_output.columns = index_pairs
+        
+        name = 'dummydata'
+        
+        test_database.set_data(name, dummy_input)
+        get_freq_range = dummy_output.loc[:, test_database.index_freq]
+        assert_frame_equal(dummy_output, 
+                           test_database.get_data(name, get_freq_range))
+    
+    def test_outband_polalate(self):
+        freq1 = []
+        pass
+    
+    def test_input_datachk(self):
+        pass
 
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):

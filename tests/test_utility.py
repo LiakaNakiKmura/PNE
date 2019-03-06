@@ -162,6 +162,17 @@ class TestMagLog_utility(unittest.TestCase):
             calced = mlu.magdeg2comp(data[amp], data[deg])
             assert_array_almost_equal(data[comp], calced)
             
+    def test_logx_y_liner_interpolate(self):
+        #test linear interpolatinon for logx vs y.
+        mlu = MagLogUtil()
+        length = 6
+        freq1 = [10.**(2*i) for i in range(int(length/2)+1)]
+        val1 = [-60.-20*i*2 for i in range(int(length/2)+1)]
+        freq2 = [10.**(i) for i in range(length)]
+        val2 = [-60.-20*i for i in range(length)]
+        
+        func = mlu.ylogx_interpolite(freq1, val1)
+        assert_array_almost_equal(val2, func(freq2))            
     
 if __name__=='__main__':
     unittest.main()     

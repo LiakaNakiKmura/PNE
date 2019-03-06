@@ -11,6 +11,8 @@ import abc
 # 3rd party's module
 import numpy as np
 import pandas as pd
+from pandas import DataFrame, Series
+from scipy.interpolate import interp1d
 
 # Original module  
 
@@ -218,25 +220,46 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     index_val = ''
     _getter_attr_for_pndb = 'get_data'
     _setter_attr_for_pndb = 'set_data'
-    _index_max_length = 2
+    _index_length = 2
     
     def __init__(self):
         self.pndb = PNDataBase()
         self._getter = getattr(self.pndb, self._getter_attr_for_pndb)
         self._setter = getattr(self.pndb, self._setter_attr_for_pndb)
+        self._mlu = MagLogUtil()
     
-    def get_data(self, name):
-        return self._getter(name)
-    
+    def get_data(self, name, freq_range = None):
+        if freq_range is None:
+            return self._getter(name)
+        return self._vlogf_interpolation(self._getter(name), freq_range)
+        
     def set_data(self, name, data):
         new_name, new_data = self._validation(name, data)
         return self._setter(new_name, new_data)
     
-    def _validation(self, name, data):
-        if len(data.columns) > self._index_max_length:
-            return (name, data.iloc[:, :self._index_max_length])
-        return (name, data)
     
+    def _vlogf_interpolation(self, data, freq_new):        
+        func = self._mlu.ylogx_interpolite(data.loc[:, self.index_freq], 
+                                           data.loc[:, self.index_val])
+        
+        data_new = DataFrame([freq_new, func(freq_new)]).T
+        data_new.columns = [self.index_freq, self.index_val]
+        
+        return data_new
+    
+    def _validation(self, name, data):
+        if type(data) != type(DataFrame([])):
+            raise TypeError('data type must be pandas dataframe.')
+
+        if len(data.columns) < self._index_length:
+            # if number of columns is short, value error 
+            raise ValueError('data index length must be {}'\
+                             .format(self._index_length))
+        else:
+            # limit the length of maximum.
+            return (name, data.iloc[:, :self._index_length])
+
+
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Noise'})
 class NoiseDataBase(IndivDataBase):
@@ -257,6 +280,9 @@ class TransferfuncDataBase(IndivDataBase):
     
     def set_mag_deg_data(self, name, data):
         '''
+        transform data from amplitude and angular data to complex number and
+        set to database.
+        
         data has following columns.
         (freq, amplitude, angular)
         '''

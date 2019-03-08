@@ -190,6 +190,10 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         self.assertRaises(ValueError, test_database.set_data, 
                           name, one_length_data)
     
+    def test_assert_wrong_data(self):
+        # if data length is different assert 
+        pass
+    
 
 
     def test_read_data_wt_freq_set(self):
@@ -203,8 +207,12 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         
         freq1 = [10.**(2*i) for i in range(int(length/2))]
         val1 = [-60.-20*i*2 for i in range(int(length/2))]
-        freq2 = [10.**(i) for i in range(length-1)]
-        val2 = [-60.-20*i for i in range(length-1)]
+        
+        freq2 = [10.**(i-1) for i in range(length+1)]
+        # outband return the nan
+        val2 = [np.nan]
+        val2.extend([-60.-20*i for i in range(length-1)])
+        val2.append(np.nan)
         
         dummy_input = DataFrame([freq1, val1]).T
         dummy_input.columns = index_pairs
@@ -219,11 +227,7 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         assert_frame_equal(dummy_output, 
                            test_database.get_data(name, get_freq_range))
     
-    def test_outband_polalate(self):
-        freq1 = []
-        pass
-    
-    def test_input_datachk(self):
+    def test_rename_columns(self):
         pass
 
 @add_msg  

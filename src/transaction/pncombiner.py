@@ -240,7 +240,8 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     
     def _vlogf_interpolation(self, data, freq_new):        
         func = self._mlu.ylogx_interpolite(data.loc[:, self.index_freq], 
-                                           data.loc[:, self.index_val])
+                                           data.loc[:, self.index_val],
+                                           bounds_error = False)
         
         data_new = DataFrame([freq_new, func(freq_new)]).T
         data_new.columns = [self.index_freq, self.index_val]

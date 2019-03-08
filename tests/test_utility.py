@@ -165,13 +165,21 @@ class TestMagLog_utility(unittest.TestCase):
     def test_logx_y_liner_interpolate(self):
         #test linear interpolatinon for logx vs y.
         mlu = MagLogUtil()
-        length = 6
-        freq1 = [10.**(2*i) for i in range(int(length/2)+1)]
-        val1 = [-60.-20*i*2 for i in range(int(length/2)+1)]
-        freq2 = [10.**(i) for i in range(length)]
-        val2 = [-60.-20*i for i in range(length)]
+        length = 4
+        freq1 = [10.**(2*i) for i in range(length)]
+        val1 = [-60.-20*i*2 for i in range(length)]
         
-        func = mlu.ylogx_interpolite(freq1, val1)
+        # Add invilid value to front and back.
+        freq1 =  [1.E-1, -10, np.nan] + freq1 + [1.E9, -10]
+        val1 = [np.nan, -200, -300] + val1 +[np.nan, -200]
+
+        freq2 = [10.**(i) for i in range(2*length-1)]
+        val2 = [-60. -20*i for i in range(2*length-1)]
+        # outband return the nan
+        freq2 = [1-1E-9] + freq2 + [10.**(2*(length-1))+1E-9]
+        val2 = [np.nan] + val2 + [np.nan]
+        
+        func = mlu.ylogx_interpolite(freq1, val1,bounds_error = False)
         assert_array_almost_equal(val2, func(freq2))            
     
 if __name__=='__main__':

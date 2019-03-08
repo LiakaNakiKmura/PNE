@@ -11,6 +11,7 @@ import numbers
 # 3rd party's module
 import numpy as np
 import pandas as pd
+from pandas import Series
 from scipy.interpolate import interp1d
 
 # Original module  
@@ -44,6 +45,9 @@ class MagLogUtil():
         return mag*np.exp(np.deg2rad(deg)*1j)
     
     def ylogx_interpolite(self, x, y, *args, **kwargs):
-        log10x = np.log10(x)
-        interpolite = interp1d(log10x, y, *args, **kwargs)
+        log10x = Series(np.log10(x))
+        valid = ~(np.isnan(log10x)|np.isnan(y))
+        #pick up non-nan data to drop nan data from log x, y
+        
+        interpolite = interp1d(log10x[valid], Series(y)[valid], *args, **kwargs)
         return lambda x_new : interpolite(np.log10(x_new))

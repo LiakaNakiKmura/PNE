@@ -179,7 +179,7 @@ class TestMagLog_utility(unittest.TestCase):
         freq2 = [10.**(i) for i in range(2*length-1)]
         val2 = [-60. -20*i for i in range(2*length-1)]
         # outband return the nan
-        freq2 = [1-1E-9] + freq2 + [10.**(2*(length-1))+1]
+        freq2 = [1-1E-3] + freq2 + [10.**(2*(length-1))+1E+3]
         val2 = [np.nan] + val2 + [np.nan]
         
         func = mlu.ylogx_interpolite(freq1, val1,bounds_error = False)

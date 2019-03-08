@@ -169,9 +169,12 @@ class TestMagLog_utility(unittest.TestCase):
         freq1 = [10.**(2*i) for i in range(length)]
         val1 = [-60.-20*i*2 for i in range(length)]
         
+        intter = int(length/3)+1
         # Add invilid value to front and back.
-        freq1 =  [1.E-1, -10, np.nan] + freq1 + [1.E9, -10]
-        val1 = [np.nan, -200, -300] + val1 +[np.nan, -200]
+        freq1 =  [1.E-1, -10, np.nan] + freq1[:intter] +\
+        [1.E9, 0] + freq1[intter:] + [1.E9, -10]
+        val1 = [np.nan, -200, -300] + val1[:intter] +\
+        [np.nan, -60] + val1[intter:] + [np.nan, -200]
 
         freq2 = [10.**(i) for i in range(2*length-1)]
         val2 = [-60. -20*i for i in range(2*length-1)]

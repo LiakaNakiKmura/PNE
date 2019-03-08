@@ -256,9 +256,12 @@ class IndivDataBase(metaclass = abc.ABCMeta):
             # if number of columns is short, value error 
             raise ValueError('data index length must be {}'\
                              .format(self._index_length))
-        else:
-            # limit the length of maximum.
-            return (name, data.iloc[:, :self._index_length])
+        
+        # limit the length of columns.
+        new_data = data.iloc[:, :self._index_length]
+        # rename the columns for fit data.
+        new_data.columns = [self.index_freq, self.index_val]
+        return (name, new_data)
 
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 

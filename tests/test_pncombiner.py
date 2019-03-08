@@ -204,6 +204,7 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         test_database = self._ClassForTest()
         length = 10
         index_pairs = [test_database.index_freq, test_database.index_val]
+        name = 'dummydata'
         
         freq1 = [10.**(2*i) for i in range(int(length/2))]
         val1 = [-60.-20*i*2 for i in range(int(length/2))]
@@ -220,15 +221,29 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         dummy_output = DataFrame([freq2, val2]).T
         dummy_output.columns = index_pairs
         
-        name = 'dummydata'
-        
         test_database.set_data(name, dummy_input)
         get_freq_range = dummy_output.loc[:, test_database.index_freq]
         assert_frame_equal(dummy_output, 
                            test_database.get_data(name, get_freq_range))
     
     def test_rename_columns(self):
-        pass
+        test_database = self._ClassForTest()
+        
+        length = 10
+        diff_names = ['First name', 'Last name']
+        index_pairs = [test_database.index_freq, test_database.index_val]
+        name = 'dummydata'
+        
+        freq1 = [10.**(i) for i in range(length)]
+        val1 = [-60.-20*i for i in range(length)]
+        dummy_input = DataFrame([freq1, val1]).T
+        dummy_input.columns = diff_names
+        
+        dummy_output = DataFrame([freq1, val1]).T
+        dummy_output.columns = index_pairs
+        
+        test_database.set_data(name, dummy_input)
+        assert_frame_equal(dummy_output, test_database.get_data(name))
 
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):

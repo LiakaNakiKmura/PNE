@@ -7,36 +7,31 @@ abstract class Transaction{
 class PNCombiner
 PNCombiner -ri-|> Transaction
 
-
-abstract class PN_TF_Calc{
-    +calc()
-}
-
-PNCombiner --> PN_TF_Calc
+PNCombiner --> PNcalc
 PNCombiner --> PNDataWriter
 PNCombiner --> PNDataReader
 PNCombiner --> PNPrmtrMng
 
-class PNDataWriter
-class PNDataReader
-class PNcalc
+class PNDataWriter{
+    +excute()
+}
+class PNDataReader{
+    +excute()
+}
+class PNcalc{
+    +excute()
+}
 class PNPrmtrMng
 
 PNDataWriter --up|> Transaction
 PNDataReader --up|> Transaction
-PNcalc --up|> PN_TF_Calc
+PNcalc --up|> Transaction
 
 class PNDataBase{
     <<singleton>>
-    +set_noise(name, freq_nosie_pairas, transfer_func)
-    +get_noise(name)
-    +set_open-loop(open_loop)
-    +get_noise()
-    +set_total_pn(phase_noise)
-    +get_total_pn()
 }
-PNDataWriter -ri> PNDataBase
-PNDataReader -ri> PNDataBase
-PNcalc -ri> PNDataBase
+PNDataWriter --do> PNDataBase
+PNDataReader --do> PNDataBase
+PNcalc --do> PNDataBase
 
 @enduml

@@ -189,11 +189,6 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         # Only DataFrame can be used
         self.assertRaises(ValueError, test_database.set_data, 
                           name, one_length_data)
-    
-    def test_assert_wrong_data(self):
-        # if data length is different assert 
-        pass
-    
 
 
     def test_read_data_wt_freq_set(self):
@@ -249,20 +244,6 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _ClassForTest = NoiseDataBase
     _getter_for_pndb = 'get_noise'
-    def test_noise_names(self):
-        '''
-        test getting noise names
-        '''
-        data_size = [2,5]
-        
-        test_db = self._ClassForTest()
-        dummydata = {'a': DataFrame(np.random.rand(*data_size)),
-                     'b': DataFrame(np.zeros(data_size)),
-                     'c': DataFrame(np.ones(data_size))}
-        
-        for key, val in dummydata.items():
-            test_db.set_data(key, val)
-        self.assertEqual(test_db.get_names(), dummydata.keys())
 
 @add_msg  
 class TestTransferFuncDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
@@ -287,7 +268,29 @@ class TestCloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _ClassForTest = CloseLoopDataBase
     _getter_for_pndb = 'get_closeloop_noise'
     
-        
+
+@add_msg  
+class ParallelUsingOfDatabase(UsingPNDataBase, unittest.TestCase):
+    def test_noisenames(self):
+        ndb = NoiseDataBase()
+        tfdb = TransferfuncDataBase()
+
+        length = 5
+        noise_names = ['a', 'b', 'c']
+        tf_names = ['d', 'b']
+        common_names = list(set(noise_names) & set(tf_names))
+        freq = 10**np.random.rand(length)
+
+        for name in noise_names:
+            val = np.random.rand(length)
+            ndb.set_data(name, DataFrame([freq, val]).T)
+            
+        for name in tf_names:
+            val = np.random.rand(length) + np.random.rand(length)*1j
+            tfdb.set_data(name, DataFrame([freq, val]).T)
+            
+        self.assertEqual(ndb.get_names(), common_names)
+        self.assertEqual(tfdb.get_names(), common_names)
 
 @add_msg
 class TestPNparameter(unittest.TestCase):
@@ -422,6 +425,15 @@ class Test_database_detail(UsingPNDataBase, unittest.TestCase):
         for key, val in dummydata.items():
             self.pndb.set_noise(key, val)
         self.assertEqual(self.pndb.get_noise_names(), dummydata.keys())
+
+    def test_transferfunc_names(self):
+        '''
+        test getting transferfunc names
+        '''
+        dummydata = {'a':list(range(4)), 'b': np.zeros(10), 'c':np.ones(5)}
+        for key, val in dummydata.items():
+            self.pndb.set_transfer_func(key, val)
+        self.assertEqual(self.pndb.get_transfer_func_names(), dummydata.keys())
 
 @add_msg
 class TestCombineRead(UsingPNDataBase, unittest.TestCase):

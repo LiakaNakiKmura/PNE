@@ -56,7 +56,7 @@ class _PNDataIOCommon(Transaction):
     @abc.abstractmethod
     def _set_io_setting(self):
         '''
-        Subclass is needed to overwrite this method to set the _io_setting as
+        Subclass needs to overwrite this method to set the _io_setting as
         reding or writing defined in PNPrmtrMng. This setting will be used for
         choosing the message reading or writing.
         '''
@@ -159,6 +159,9 @@ class PNDataBase():
     def get_transfer_func(self, name):
         return self._tf[name]
     
+    def get_transfer_func_names(self):
+        return self._tf.keys()
+    
     def set_closeloop_noise(self, name, data):
         self._combined_noise[name] = data
     
@@ -219,7 +222,9 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     index_freq = ''
     index_val = ''
     _getter_attr_for_pndb = 'get_data'
+    # getter attribute name of pndb method.
     _setter_attr_for_pndb = 'set_data'
+    # setter attribute name of pndb method.
     _index_length = 2
     
     def __init__(self):
@@ -263,15 +268,18 @@ class IndivDataBase(metaclass = abc.ABCMeta):
         new_data.columns = [self.index_freq, self.index_val]
         return (name, new_data)
 
-
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Noise'})
 class NoiseDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_noise'
     _setter_attr_for_pndb = 'set_noise'
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pairs =  NoiseTransfuncPairsManager()
+    
     def get_names(self):
-        return self.pndb.get_noise_names()
+        return self._pairs.get_pair_names()
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Transfer function'})
@@ -281,6 +289,7 @@ class TransferfuncDataBase(IndivDataBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mlu = MagLogUtil()
+        self._pairs =  NoiseTransfuncPairsManager()
     
     def set_mag_deg_data(self, name, data):
         '''
@@ -293,12 +302,25 @@ class TransferfuncDataBase(IndivDataBase):
         freq = data.iloc[:, 0]
         amplitude = data.iloc[:, 1]
         degree = data.iloc[:, 2]
+        
         transferfunc = self.mlu.magdeg2comp(amplitude, degree)
         new_data = pd.concat([freq, transferfunc], axis = 1)
         self.set_data(name, new_data)
+    
+    def get_names(self):
+        return self._pairs.get_pair_names()
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Close loop data'})
 class CloseLoopDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_closeloop_noise'
     _setter_attr_for_pndb = 'set_closeloop_noise'
+
+class NoiseTransfuncPairsManager():
+    def __init__(self):
+        self.pndb = PNDataBase()
+        
+    def get_pair_names(self):
+        noise_names = self.pndb.get_noise_names()
+        tf_names = self.pndb.get_transfer_func_names()
+        return list(set(noise_names) & set(tf_names))

@@ -17,7 +17,8 @@ from unittest.mock import patch
 from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
-from src.interface.intfc_com import (Transaction, Reader, Writer, PathAsk)
+from src.interface.intfc_com import (Transaction, Reader, Writer, PathAsk, 
+                                     ValueAsk)
 
 class TestForMethodExist():
     '''
@@ -41,7 +42,8 @@ class TestCombinePN(TestForMethodExist, unittest.TestCase):
     _class_method_pairs=((Transaction,'execute'),
                          (Reader,'read'),
                          (Writer,'write'),
-                         (PathAsk,'get_path')                   
+                         (PathAsk,'get_path'),
+                         (ValueAsk, 'get_value')
                          )
 
 if __name__=='__main__':

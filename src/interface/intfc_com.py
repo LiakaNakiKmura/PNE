@@ -12,22 +12,27 @@ import abc
 
 # Original module  
 
-class Transaction(metaclass=abc.ABCMeta):
+class Transaction(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def execute(self):
         pass
 
-class Reader(metaclass=abc.ABCMeta):
+class Reader(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def read(self, message):
         pass
     
-class Writer(metaclass=abc.ABCMeta):
+class Writer(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def write(self, message, data):
         pass
 
-class PathAsk(metaclass=abc.ABCMeta):
+class PathAsk(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def get_path(self, message):
+        pass
+
+class ValueAsk(metaclass = abc.ABCMeta):
+    @abc.abstractmethod
+    def get_value(self, message):
         pass

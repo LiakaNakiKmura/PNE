@@ -84,7 +84,6 @@ class PNDataReader(_PNDataIOCommon):
         data = self.csvio.read(message)
         self.pndb.set_noise(parameter, data)
 
-
 class PNDataWriter(_PNDataIOCommon):
     _target=['total']
     
@@ -94,6 +93,33 @@ class PNDataWriter(_PNDataIOCommon):
     def _do_io(self, parameter, message):
         data = self.pndb.get_closeloop_noise(parameter)     
         self.csvio.write(message, data)
+
+@read_only_getter_decorator({'name':'parameter name'})
+#name must be overwrite in inhirated class.
+class ParameterManager(metaclass = abc.ABCMeta):
+    def get_message(self):
+        pass
+
+@read_only_getter_decorator({'name':'Reference',
+                             'tf':'transfer_func',
+                             'noise': 'noise'})
+class RefParameter(ParameterManager):
+    def __init__(self):
+        self._data_type = self.noise
+        self._make_message_dict()
+    
+    def set_type(self, new_type):
+        if new_type in self._message.keys():
+            self._data_type = new_type
+        else:
+            raise ValueError('{} is invalid type to be set'.format(new_type))
+    
+    def get_message(self):
+        return self._message[self._data_type]
+    
+    def _make_message_dict(self):
+        self._message = {self.noise: 'Noise of reference',
+                         self.tf: 'Transfer function of reference'}
 
 class PNCalc(Transaction):
     def __init__(self):

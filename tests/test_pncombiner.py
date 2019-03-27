@@ -13,6 +13,7 @@ because import
 # Standard module
 import unittest
 from unittest.mock import patch
+import re
 
 # 3rd party's module
 import pandas as pd
@@ -30,7 +31,8 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         PNCalc, PNDataBase, PNPrmtrMng,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
-                                        CloseLoopDataBase)
+                                        CloseLoopDataBase,
+                                        ParameterManager, RefParameter)
 
 # utlities.
 from context import src # path setting
@@ -66,9 +68,10 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
                                (PNDataReader, Transaction),
                                (PNDataWriter, Transaction),
                                (PNCalc, Transaction),
-                               (NoiseDataBase, IndivDataBase)
+                               (NoiseDataBase, IndivDataBase),
+                               (TransferfuncDataBase, IndivDataBase),
+                               (CloseLoopDataBase, IndivDataBase)
                                )
-
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -123,11 +126,15 @@ class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
 
 class IndivDataBaseSetGetChk(UsingPNDataBase):
     '''
-    This test uses pndb.
-    UsingPNDataBase manage the pndb because this is singleton.
+    This is the test for indivisual Data Base.
+    target data base is set on _ClassForTest.
+    Each class is the data base for each parameter. Data is deformed and 
+    transfer to the PNDataBase.
+    
+    Because this test class uses pndb, this class inherate UsingPNDataBase.
     '''
     
-    _ClassForTest = NoiseDataBase
+    _ClassForTest = None
     _getter_for_pndb = 'get_data'
     def test_datasetting(self):
         '''
@@ -222,6 +229,9 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
                            test_database.get_data(name, get_freq_range))
     
     def test_rename_columns(self):
+        '''
+        test auto renaming columns of data.
+        '''
         test_database = self._ClassForTest()
         
         length = 10
@@ -292,6 +302,106 @@ class ParallelUsingOfDatabase(UsingPNDataBase, unittest.TestCase):
         self.assertEqual(ndb.get_names(), common_names)
         self.assertEqual(tfdb.get_names(), common_names)
 
+
+'''
+@add_msg
+class TestInidivReader():
+    """
+    DataReader can read from following relation.
+    # _get_data_type
+    # _database
+    # _parameter
+    """
+    _ClassForTest = None
+    _DataBase = None
+    _data_size = [10, 2]
+    _pnpm = PNPrmtrMng()
+    _name = None
+    _name_str_pairs = {}
+    
+    def setUp(self):
+        self._reader = self._ClassForTest()
+        self._make_return_value()
+    
+    """
+    def _set_open_loop_gain(self):
+        self._olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
+                      for i in range(self._data_size[0])]
+        self._tfdb.set_data(self._pnpm.open_loop_gain, self._olg)
+    """
+    
+    def _make_return_value(self):
+        # name must be string of msg 
+        self._return_values ={name: np.random.rand(*self._data_size)\
+                              for name in self._name_str_pairs.keys()}
+    
+    def _side_effect_generator(self):
+        def side_effect(msg):
+            for name in self._return_values.keys():
+                if re.match('noise', msg, flags = re.I) is not None:
+                    # If matched, return not None.
+                    return np.random.rand(*self._data_size)
+        return side_effect
+    
+    def test_read_data(self):
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            read_mock.side_effect =self._side_effect_generator()
+            self._reader.execute()
+    
+    def test_inherited(self):
+        issubclass(self._ClassForTest, DataReader)
+"""
+class TestRefReader(TestInidivReader, unittest.TestCase):
+    _ClassForTest = RefDataReader
+"""
+'''
+
+@add_msg
+class TestParameterManagerFuncExists(TestForMethodExist, unittest.TestCase):
+    _class_method_pairs=((ParameterManager,'get_message'),
+                         )
+
+class TestParameterManager():
+    _ClassForTest = None
+    def setUp(self):
+        self.test_class = self._ClassForTest()
+    
+    def test_inerated(self):
+        self.assertTrue(isinstance(self.test_class, ParameterManager))
+    
+    def test_get_parameter_name(self):
+        self.assertTrue(isinstance(self.test_class.name, str))
+        print(self.test_class.name)
+        
+    def test_get_parameter_msg(self):
+        msg = self.test_class.get_message()
+        self.assertTrue(isinstance(msg, str))
+        self.assertTrue(len(msg) > 0)
+
+@add_msg
+class TestRefParameter(TestParameterManager, unittest.TestCase):
+    _ClassForTest = RefParameter
+    def test_get_parameter_msg(self):
+        dflt_msg = self.test_class.get_message()
+        self.test_class.set_type(self.test_class.tf)
+        tf_msg = self.test_class.get_message()
+        self.test_class.set_type(self.test_class.noise)
+        noise_msg = self.test_class.get_message()
+        
+        for msg in [dflt_msg, tf_msg, noise_msg]:
+            # All data names are words.  
+            self.assertTrue(isinstance(msg, str))
+            self.assertTrue(len(msg) > 0)
+        
+        self.assertNotEqual(tf_msg, noise_msg)
+        # Datanome for transger function and noise must be different.
+
+        self.assertEqual(dflt_msg, noise_msg)
+        # Datanome for transger function and noise must be different.
+        
+        self.assertRaises(ValueError, self.test_class.set_type, None)
+        # If invalid value is set to set_type, raise value erorr
+        
 @add_msg
 class TestPNparameter(unittest.TestCase):
     
@@ -330,7 +440,7 @@ class TestPNparameter(unittest.TestCase):
                 prmtr_msg = pnpm.get_message(usage, prmtr)
                 self.assertTrue(isinstance(prmtr_msg, str))
                 self.assertTrue(0<len(prmtr_msg))
-        
+      
 
 class Parameter_Names():
     _names = ['ref', 'vco', 'pd']

@@ -97,13 +97,19 @@ class PNDataWriter(_PNDataIOCommon):
 @read_only_getter_decorator({'name':'parameter name'})
 #name must be overwrite in inhirated class.
 class ParameterManager(metaclass = abc.ABCMeta):
-    def get_message(self):
+    abc.abstractmethod
+    def get_dataname(self):
         pass
 
-@read_only_getter_decorator({'name':'Reference',
-                             'tf':'transfer_func',
+@read_only_getter_decorator({'name':'open loop'})
+class OpenLoopParameter(ParameterManager):
+    _message = 'open loop of PLL'
+    def get_dataname(self):
+        return self._message
+
+@read_only_getter_decorator({'tf':'transfer_func',
                              'noise': 'noise'})
-class RefParameter(ParameterManager):
+class NoiseParameter(ParameterManager):
     def __init__(self):
         self._data_type = self.noise
         self._make_message_dict()
@@ -114,12 +120,20 @@ class RefParameter(ParameterManager):
         else:
             raise ValueError('{} is invalid type to be set'.format(new_type))
     
-    def get_message(self):
+    def get_dataname(self):
         return self._message[self._data_type]
     
     def _make_message_dict(self):
-        self._message = {self.noise: 'Noise of reference',
-                         self.tf: 'Transfer function of reference'}
+        self._message = {self.noise: 'Noise of {}'.format(self.name),
+                         self.tf: 'Transfer function of {}'.format(self.name)}
+    
+@read_only_getter_decorator({'name':'reference'})
+class RefParameter(NoiseParameter):
+    pass
+
+@read_only_getter_decorator({'name':'VCO'})
+class VCOParameter(NoiseParameter):
+    pass
 
 class PNCalc(Transaction):
     def __init__(self):

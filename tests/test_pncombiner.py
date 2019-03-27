@@ -32,7 +32,8 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
                                         CloseLoopDataBase,
-                                        ParameterManager, RefParameter)
+                                        ParameterManager, RefParameter,
+                                        VCOParameter, OpenLoopParameter)
 
 # utlities.
 from context import src # path setting
@@ -358,7 +359,7 @@ class TestRefReader(TestInidivReader, unittest.TestCase):
 
 @add_msg
 class TestParameterManagerFuncExists(TestForMethodExist, unittest.TestCase):
-    _class_method_pairs=((ParameterManager,'get_message'),
+    _class_method_pairs=((ParameterManager,'get_dataname'),
                          )
 
 class TestParameterManager():
@@ -373,20 +374,22 @@ class TestParameterManager():
         self.assertTrue(isinstance(self.test_class.name, str))
         print(self.test_class.name)
         
-    def test_get_parameter_msg(self):
-        msg = self.test_class.get_message()
+    def test_get_parameter_dataname(self):
+        msg = self.test_class.get_dataname()
         self.assertTrue(isinstance(msg, str))
         self.assertTrue(len(msg) > 0)
 
-@add_msg
-class TestRefParameter(TestParameterManager, unittest.TestCase):
-    _ClassForTest = RefParameter
-    def test_get_parameter_msg(self):
-        dflt_msg = self.test_class.get_message()
+class TestOpenLoopParameter():
+    _ClassForTest = OpenLoopParameter
+
+
+class TestNoiseParameter(TestParameterManager):
+    def test_get_parameter_dataname(self):
+        dflt_msg = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.tf)
-        tf_msg = self.test_class.get_message()
+        tf_msg = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.noise)
-        noise_msg = self.test_class.get_message()
+        noise_msg = self.test_class.get_dataname()
         
         for msg in [dflt_msg, tf_msg, noise_msg]:
             # All data names are words.  
@@ -401,6 +404,14 @@ class TestRefParameter(TestParameterManager, unittest.TestCase):
         
         self.assertRaises(ValueError, self.test_class.set_type, None)
         # If invalid value is set to set_type, raise value erorr
+
+@add_msg
+class TestRefParameter(TestNoiseParameter, unittest.TestCase):
+    _ClassForTest = RefParameter
+    
+@add_msg
+class TestVCOParameter(TestNoiseParameter, unittest.TestCase):
+    _ClassForTest = VCOParameter
         
 @add_msg
 class TestPNparameter(unittest.TestCase):

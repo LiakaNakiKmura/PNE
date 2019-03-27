@@ -363,6 +363,10 @@ class TestParameterManagerFuncExists(TestForMethodExist, unittest.TestCase):
                          )
 
 class TestParameterManager():
+    '''
+    Test for ParameterManager class.
+    ParameterManager class has its name and dataname that is used to ask user.
+    '''
     _ClassForTest = None
     def setUp(self):
         self.test_class = self._ClassForTest()
@@ -371,13 +375,15 @@ class TestParameterManager():
         self.assertTrue(isinstance(self.test_class, ParameterManager))
     
     def test_get_parameter_name(self):
-        self.assertTrue(isinstance(self.test_class.name, str))
-        print(self.test_class.name)
+        self.assertIsWord(self.test_class.name)
         
     def test_get_parameter_dataname(self):
-        msg = self.test_class.get_dataname()
-        self.assertTrue(isinstance(msg, str))
-        self.assertTrue(len(msg) > 0)
+        # data name must be words.
+        self.assertIsWord(self.test_class.get_dataname())
+    
+    def assertIsWord(self, data):
+        self.assertTrue(isinstance(data, str))
+        self.assertTrue(len(data) > 0)
 
 class TestOpenLoopParameter():
     _ClassForTest = OpenLoopParameter
@@ -385,21 +391,21 @@ class TestOpenLoopParameter():
 
 class TestNoiseParameter(TestParameterManager):
     def test_get_parameter_dataname(self):
-        dflt_msg = self.test_class.get_dataname()
+        dflt_data_name = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.tf)
-        tf_msg = self.test_class.get_dataname()
+        tf_data_name = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.noise)
-        noise_msg = self.test_class.get_dataname()
+        noise_data_name = self.test_class.get_dataname()
         
-        for msg in [dflt_msg, tf_msg, noise_msg]:
+        for data_name in [dflt_data_name, tf_data_name, noise_data_name]:
             # All data names are words.  
-            self.assertTrue(isinstance(msg, str))
-            self.assertTrue(len(msg) > 0)
+            self.assertTrue(isinstance(data_name, str))
+            self.assertTrue(len(data_name) > 0)
         
-        self.assertNotEqual(tf_msg, noise_msg)
+        self.assertNotEqual(tf_data_name, noise_data_name)
         # Datanome for transger function and noise must be different.
 
-        self.assertEqual(dflt_msg, noise_msg)
+        self.assertEqual(dflt_data_name, noise_data_name)
         # Datanome for transger function and noise must be different.
         
         self.assertRaises(ValueError, self.test_class.set_type, None)

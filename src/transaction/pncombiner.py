@@ -135,6 +135,32 @@ class RefParameter(NoiseParameter):
 class VCOParameter(NoiseParameter):
     pass
 
+class DataGetter(metaclass = abc.ABCMeta):
+    def get_data(self):
+        pass
+
+class ReadingDataGetter(DataGetter):
+    def get_data(self):
+        pass
+    
+    def set_target_name(self, name):
+        pass
+
+class RefTFCalcDataGetter(DataGetter):
+    def __init__(self):
+        self._tfdb = TransferfuncDataBase()
+        self._pnpm = PNPrmtrMng()
+    
+    def get_data(self):
+        return self._tfdb.get_data(self._pnpm.open_loop_gain)
+
+class DataSetter(Transaction):
+    def __init__(self, parmeter_manager, reader, database):
+        pass
+    
+    def execute(self):
+        pass
+
 class PNCalc(Transaction):
     def __init__(self):
         self._ndb = NoiseDataBase()
@@ -208,6 +234,9 @@ class PNDataBase():
     def get_closeloop_noise(self, name):
         return self._combined_noise[name]
     
+    def get_closeloop_noise_names(self):
+        return self._combined_noise.keys()
+    
     def reflesh_all(self):
         self._noise = {}
         self._tf = {}
@@ -265,12 +294,15 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     # getter attribute name of pndb method.
     _setter_attr_for_pndb = 'set_data'
     # setter attribute name of pndb method.
+    _getname_attr_for_pndb = 'get_names'
+    # getter attribute to get names of set to database.
     _index_length = 2
     
     def __init__(self):
         self.pndb = PNDataBase()
         self._getter = getattr(self.pndb, self._getter_attr_for_pndb)
         self._setter = getattr(self.pndb, self._setter_attr_for_pndb)
+        self._get_name = getattr(self.pndb, self._getname_attr_for_pndb)
         self._mlu = MagLogUtil()
     
     def get_data(self, name, freq_range = None):
@@ -281,6 +313,9 @@ class IndivDataBase(metaclass = abc.ABCMeta):
     def set_data(self, name, data):
         new_name, new_data = self._validation(name, data)
         return self._setter(new_name, new_data)
+    
+    def get_names(self):
+        return self._get_name()
     
     
     def _vlogf_interpolation(self, data, freq_new):        
@@ -313,23 +348,18 @@ class IndivDataBase(metaclass = abc.ABCMeta):
 class NoiseDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_noise'
     _setter_attr_for_pndb = 'set_noise'
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._pairs =  NoiseTransfuncPairsManager()
-    
-    def get_names(self):
-        return self._pairs.get_pair_names()
+    _getname_attr_for_pndb = 'get_noise_names'
+
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Transfer function'})
 class TransferfuncDataBase(IndivDataBase):  
     _getter_attr_for_pndb = 'get_transfer_func' 
     _setter_attr_for_pndb = 'set_transfer_func' 
+    _getname_attr_for_pndb = 'get_transfer_func_names'
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mlu = MagLogUtil()
-        self._pairs =  NoiseTransfuncPairsManager()
     
     def set_mag_deg_data(self, name, data):
         '''
@@ -346,21 +376,23 @@ class TransferfuncDataBase(IndivDataBase):
         transferfunc = self.mlu.magdeg2comp(amplitude, degree)
         new_data = pd.concat([freq, transferfunc], axis = 1)
         self.set_data(name, new_data)
-    
-    def get_names(self):
-        return self._pairs.get_pair_names()
+
 
 @read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
                              'index_val':'Close loop data'})
 class CloseLoopDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_closeloop_noise'
     _setter_attr_for_pndb = 'set_closeloop_noise'
+    _getname_attr_for_pndb = 'get_closeloop_noise_names'
 
 class NoiseTransfuncPairsManager():
     def __init__(self):
-        self.pndb = PNDataBase()
+        self.ndb = NoiseDataBase()
+        self.tfdb = TransferfuncDataBase()
+        
+        # self.pndb = PNDataBase()
         
     def get_pair_names(self):
-        noise_names = self.pndb.get_noise_names()
-        tf_names = self.pndb.get_transfer_func_names()
-        return list(set(noise_names) & set(tf_names))
+        noise_names = self.ndb.get_names()
+        tf_names = self.tfdb.get_names()
+        return list(noise_names & tf_names)

@@ -13,7 +13,7 @@ because import
 # Standard module
 import unittest
 from unittest.mock import patch
-import re
+import abc
 
 # 3rd party's module
 import pandas as pd
@@ -32,8 +32,12 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
                                         CloseLoopDataBase,
+                                        NoiseTransfuncPairsManager,
                                         ParameterManager, RefParameter,
-                                        VCOParameter, OpenLoopParameter)
+                                        VCOParameter, OpenLoopParameter,
+                                        DataSetter, 
+                                        DataGetter, RefTFCalcDataGetter,
+                                        ReadingDataGetter)
 
 # utlities.
 from context import src # path setting
@@ -51,7 +55,8 @@ from src.dataio.csvio import (CSVIO)
 
 class UsingPNDataBase(object):
     '''
-    Setting for data base 
+    All test class that use database must inhirate this class.
+    This class reflesh data base in each test method.
     '''
     def setUp(self):        
         self.pndb = PNDataBase()
@@ -71,8 +76,22 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
                                (PNCalc, Transaction),
                                (NoiseDataBase, IndivDataBase),
                                (TransferfuncDataBase, IndivDataBase),
-                               (CloseLoopDataBase, IndivDataBase)
+                               (CloseLoopDataBase, IndivDataBase),
+                               (DataSetter, Transaction)
                                )
+
+@add_msg
+class TestFuncExists(TestForMethodExist, unittest.TestCase):
+    _class_method_pairs=((IndivDataBase,'set_data'),
+                         (IndivDataBase,'get_data'),
+                         (ParameterManager,'get_dataname'),
+                         (DataGetter, 'get_data'),
+                         (ReadingDataGetter, 'set_target_name')
+                         )
+    _class_attr_pairs = ((IndivDataBase, 'index_freq'),
+                         (IndivDataBase, 'index_val')
+                         )
+
 
 @add_msg
 class TestCombinePN(unittest.TestCase):
@@ -107,14 +126,6 @@ class TestCombinePN(unittest.TestCase):
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
 
-@add_msg
-class TestIndivisualDataBaseFuncExists(TestForMethodExist, unittest.TestCase):
-    _class_method_pairs=((IndivDataBase,'set_data'),
-                         (IndivDataBase,'get_data')
-                         )
-    _class_attr_pairs = ((IndivDataBase, 'index_freq'),
-                         (IndivDataBase, 'index_val')
-                         )
 
 @add_msg    
 class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
@@ -172,6 +183,14 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
                        name = test_database.index_val)
         data_pairs = pd.concat([freq, val], axis = 1)
         return data_pairs
+    
+    def _make_rand_dummy_data(self, N = 10):
+        test_database = self._ClassForTest()
+        freq = Series([10**i for i in range(N)], name = test_database.index_freq)
+        val = Series(-20/np.random.rand(N) , name = test_database.index_val)
+        data_pairs = pd.concat([freq, val], axis = 1)
+        return data_pairs
+    
     
     def test_column_length(self):
         '''
@@ -251,6 +270,24 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
         test_database.set_data(name, dummy_input)
         assert_frame_equal(dummy_output, test_database.get_data(name))
 
+    def test_get_names(self):
+        '''
+        DataBase returns names of resitored data
+        '''
+        number_of_data = 30
+        namelist = [chr(65 +i) for i in range(number_of_data)]
+        overwritenames = [namelist[i] for i in range(0, len(namelist), 2) ]
+        test_database = self._ClassForTest()
+        
+        for name in namelist:
+            test_database.set_data(name, self._make_rand_dummy_data())
+        
+        for name in overwritenames:
+            test_database.set_data(name, self._make_rand_dummy_data())
+        
+        self.assertCountEqual(namelist,  test_database.get_names())
+        
+    
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _ClassForTest = NoiseDataBase
@@ -281,10 +318,11 @@ class TestCloseLoopDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     
 
 @add_msg  
-class ParallelUsingOfDatabase(UsingPNDataBase, unittest.TestCase):
+class TestCommonNamesDataBase(UsingPNDataBase, unittest.TestCase):
     def test_noisenames(self):
         ndb = NoiseDataBase()
         tfdb = TransferfuncDataBase()
+        ntpm = NoiseTransfuncPairsManager()
 
         length = 5
         noise_names = ['a', 'b', 'c']
@@ -300,67 +338,10 @@ class ParallelUsingOfDatabase(UsingPNDataBase, unittest.TestCase):
             val = np.random.rand(length) + np.random.rand(length)*1j
             tfdb.set_data(name, DataFrame([freq, val]).T)
             
-        self.assertEqual(ndb.get_names(), common_names)
-        self.assertEqual(tfdb.get_names(), common_names)
+        self.assertCountEqual(ntpm.get_pair_names(), common_names)
 
+# FIXME: Refactoring to reading data.
 
-'''
-@add_msg
-class TestInidivReader():
-    """
-    DataReader can read from following relation.
-    # _get_data_type
-    # _database
-    # _parameter
-    """
-    _ClassForTest = None
-    _DataBase = None
-    _data_size = [10, 2]
-    _pnpm = PNPrmtrMng()
-    _name = None
-    _name_str_pairs = {}
-    
-    def setUp(self):
-        self._reader = self._ClassForTest()
-        self._make_return_value()
-    
-    """
-    def _set_open_loop_gain(self):
-        self._olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
-                      for i in range(self._data_size[0])]
-        self._tfdb.set_data(self._pnpm.open_loop_gain, self._olg)
-    """
-    
-    def _make_return_value(self):
-        # name must be string of msg 
-        self._return_values ={name: np.random.rand(*self._data_size)\
-                              for name in self._name_str_pairs.keys()}
-    
-    def _side_effect_generator(self):
-        def side_effect(msg):
-            for name in self._return_values.keys():
-                if re.match('noise', msg, flags = re.I) is not None:
-                    # If matched, return not None.
-                    return np.random.rand(*self._data_size)
-        return side_effect
-    
-    def test_read_data(self):
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
-            read_mock.side_effect =self._side_effect_generator()
-            self._reader.execute()
-    
-    def test_inherited(self):
-        issubclass(self._ClassForTest, DataReader)
-"""
-class TestRefReader(TestInidivReader, unittest.TestCase):
-    _ClassForTest = RefDataReader
-"""
-'''
-
-@add_msg
-class TestParameterManagerFuncExists(TestForMethodExist, unittest.TestCase):
-    _class_method_pairs=((ParameterManager,'get_dataname'),
-                         )
 
 class TestParameterManager():
     '''
@@ -419,6 +400,99 @@ class TestRefParameter(TestNoiseParameter, unittest.TestCase):
 class TestVCOParameter(TestNoiseParameter, unittest.TestCase):
     _ClassForTest = VCOParameter
         
+
+class TestInidivDataGetter(metaclass = abc.ABCMeta):
+    _ClassForTest = None
+    
+    def setUp(self):
+        self._datagetter = self._ClassForTest()
+    
+    def test_inhirated(self):
+        self.assertTrue(issubclass(self._ClassForTest, DataGetter))
+    
+    @abc.abstractmethod
+    def test_get_data(self):
+        pass
+
+@add_msg
+class TestRefTFCalcDataGetter(UsingPNDataBase, TestInidivDataGetter, 
+                              unittest.TestCase):
+    _ClassForTest = RefTFCalcDataGetter
+    _data_size = [5, 2]
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+        TestInidivDataGetter.setUp(self)
+        self._tfdb = TransferfuncDataBase()
+        self._pnpm = PNPrmtrMng()
+    
+    def test_get_data(self):
+        self._set_open_loop_gain()
+        data = self._datagetter.get_data()
+        assert_frame_equal(data, self._dummy_loop_data)
+
+    def _set_open_loop_gain(self):
+        # Make Dummy Data of open loop gain.
+        olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
+                      for i in range(self._data_size[0])]
+        freq = [10**(i) for i in range(len(olg))]
+        _dummy_loop_data = DataFrame([freq, olg]).T
+        
+        self._tfdb.set_data(self._pnpm.open_loop_gain, _dummy_loop_data)
+        self._dummy_loop_data =  _dummy_loop_data
+        self._dummy_loop_data.columns = [self._tfdb.index_freq, 
+                                         self._tfdb.index_val]
+
+@add_msg
+class TestReadingDataGetter(TestInidivDataGetter, unittest.TestCase):
+    _ClassForTest = ReadingDataGetter
+
+
+'''
+    
+    """
+    def _set_open_loop_gain(self):
+        self._olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
+                      for i in range(self._data_size[0])]
+        self._tfdb.set_data(self._pnpm.open_loop_gain, self._olg)
+    """
+    
+    def _make_return_value(self):
+        # name must be string of msg 
+        self._return_values ={name: np.random.rand(*self._data_size)\
+                              for name in self._name_str_pairs.keys()}
+    
+    def _side_effect_generator(self):
+        def side_effect(msg):
+            for name in self._return_values.keys():
+                if re.match('noise', msg, flags = re.I) is not None:
+                    # If matched, return not None.
+                    return np.random.rand(*self._data_size)
+        return side_effect
+    
+    def test_read_data(self):
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            read_mock.side_effect =self._side_effect_generator()
+            self._reader.execute()
+    
+    def test_inherited(self):
+        issubclass(self._ClassForTest, DataReader)
+"""
+class TestRefReader(TestInidivReader, unittest.TestCase):
+    _ClassForTest = RefDataReader
+"""
+'''
+
+@add_msg
+class TestDataSetter(unittest.TestCase):
+    # TODO: add test for data setter
+    def test_data_setter(self):
+        refpar = RefParameter()
+        ndb = NoiseDataBase()
+        csvio = CSVIO()
+        data_setter = DataSetter(refpar, csvio, ndb)
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            data_setter.execute()
+
 @add_msg
 class TestPNparameter(unittest.TestCase):
     

@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 # Original module  
 
 #interfaces
-from src.interface.intfc_com import Transaction
+from src.interface.intfc_com import Transaction, Reader
 
 #utilities
 from src.utility.utility import singleton_decorator, read_only_getter_decorator
@@ -135,31 +135,21 @@ class RefParameter(NoiseParameter):
 class VCOParameter(NoiseParameter):
     pass
 
-class DataGetter(metaclass = abc.ABCMeta):
-    def get_data(self):
-        pass
-
-class ReadingDataGetter(DataGetter):
-    def get_data(self):
-        pass
-    
-    def set_target_name(self, name):
-        pass
-
-class RefTFCalcDataGetter(DataGetter):
-    def __init__(self):
-        self._tfdb = TransferfuncDataBase()
-        self._pnpm = PNPrmtrMng()
-    
-    def get_data(self):
-        return self._tfdb.get_data(self._pnpm.open_loop_gain)
 
 class DataSetter(Transaction):
-    def __init__(self, parmeter_manager, reader, database):
-        pass
+    def __init__(self, ReaderClass, DatBaseClass,  parmeter_manager_instance):
+        assert issubclass(ReaderClass, Reader),\
+        '{} must be subclass of Reader'.format(ReaderClass)
+        assert issubclass(DatBaseClass, IndivDataBase),\
+        '{} must be subclass of Reader'.format(ReaderClass)
+        
+        self._pr_mng = parmeter_manager_instance
+        self._reader = ReaderClass()
+        self._database = DatBaseClass()
     
     def execute(self):
-        pass
+        data = self._reader.read(self._pr_mng)
+        self._database.set_data(self._pr_mng.name, data)
 
 class PNCalc(Transaction):
     def __init__(self):

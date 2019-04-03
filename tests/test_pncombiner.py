@@ -35,9 +35,7 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         NoiseTransfuncPairsManager,
                                         ParameterManager, RefParameter,
                                         VCOParameter, OpenLoopParameter,
-                                        DataSetter, 
-                                        DataGetter, RefTFCalcDataGetter,
-                                        ReadingDataGetter)
+                                        DataSetter)
 
 # utlities.
 from context import src # path setting
@@ -85,8 +83,6 @@ class TestFuncExists(TestForMethodExist, unittest.TestCase):
     _class_method_pairs=((IndivDataBase,'set_data'),
                          (IndivDataBase,'get_data'),
                          (ParameterManager,'get_dataname'),
-                         (DataGetter, 'get_data'),
-                         (ReadingDataGetter, 'set_target_name')
                          )
     _class_attr_pairs = ((IndivDataBase, 'index_freq'),
                          (IndivDataBase, 'index_val')
@@ -134,6 +130,21 @@ class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
                             (TransferfuncDataBase, IndivDataBase),
                             (CloseLoopDataBase,  IndivDataBase)
                             )
+
+
+class MakeDummyDataForDataBase():
+    '''
+    This class make dummy data. That fits normal format.
+    '''
+    def __init__(self, DataBase):
+        self.database = DataBase()
+    
+    def get_dummydata(self, length = 10):
+        freq = Series([10**i for i in range(length)], 
+                       name = self.database.index_freq)
+        val = Series(-20/np.sort(np.random.rand(length))[::-1] , 
+                     name = self.database.index_val)
+        return  DataFrame([freq, val]).T
 
 
 class IndivDataBaseSetGetChk(UsingPNDataBase):
@@ -409,53 +420,28 @@ class TestRefParameter(TestNoiseParameter, unittest.TestCase):
 @add_msg
 class TestVCOParameter(TestNoiseParameter, unittest.TestCase):
     _ClassForTest = VCOParameter
-        
-
-class TestInidivDataGetter(metaclass = abc.ABCMeta):
-    _ClassForTest = None
-    
-    def setUp(self):
-        self._datagetter = self._ClassForTest()
-    
-    def test_inhirated(self):
-        self.assertTrue(issubclass(self._ClassForTest, DataGetter))
-    
-    @abc.abstractmethod
-    def test_get_data(self):
-        pass
 
 @add_msg
-class TestRefTFCalcDataGetter(UsingPNDataBase, TestInidivDataGetter, 
-                              unittest.TestCase):
-    _ClassForTest = RefTFCalcDataGetter
-    _data_size = [5, 2]
+class TestDataSetter(unittest.TestCase):
+    # TODO: add test for data setter
+    _DataBase = NoiseDataBase
     def setUp(self):
-        UsingPNDataBase.setUp(self)
-        TestInidivDataGetter.setUp(self)
-        self._tfdb = TransferfuncDataBase()
-        self._pnpm = PNPrmtrMng()
+        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
     
-    def test_get_data(self):
-        self._set_open_loop_gain()
-        data = self._datagetter.get_data()
-        assert_frame_equal(data, self._dummy_loop_data)
-
-    def _set_open_loop_gain(self):
-        # Make Dummy Data of open loop gain.
-        olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
-                      for i in range(self._data_size[0])]
-        freq = [10**(i) for i in range(len(olg))]
-        _dummy_loop_data = DataFrame([freq, olg]).T
+    def test_data_setter(self):
+        db = self._DataBase()
         
-        self._tfdb.set_data(self._pnpm.open_loop_gain, _dummy_loop_data)
-        self._dummy_loop_data =  _dummy_loop_data
-        self._dummy_loop_data.columns = [self._tfdb.index_freq, 
-                                         self._tfdb.index_val]
-
-@add_msg
-class TestReadingDataGetter(TestInidivDataGetter, unittest.TestCase):
-    _ClassForTest = ReadingDataGetter
-
+        data_setter = DataSetter(CSVIO, self._DataBase, self.refpar)
+        dummydata = self.make_dummydata.get_dummydata()
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            read_mock.return_value = dummydata
+            data_setter.execute()
+            assert_frame_equal(db.get_data(self.refpar.name), dummydata)
+    
+    def _set_parameter(self):
+        self.refpar = RefParameter()
+        self.refpar.set_type(self.refpar.noise)
+        
 
 '''
     
@@ -492,17 +478,6 @@ class TestRefReader(TestInidivReader, unittest.TestCase):
 """
 '''
 
-@add_msg
-class TestDataSetter(unittest.TestCase):
-    # TODO: add test for data setter
-    
-    def test_data_setter(self):
-        refpar = RefParameter()
-        ndb = NoiseDataBase()
-        csvio = CSVIO()
-        data_setter = DataSetter(refpar, csvio, ndb)
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
-            data_setter.execute()
 
 @add_msg
 class TestPNparameter(unittest.TestCase):

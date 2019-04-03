@@ -53,7 +53,7 @@ class Signletone_test_base():
         b = self._cls()
         d = Dummy()
         
-        self.assertTrue(isinstance(a, self._cls))
+        self.assertIsInstance(a, self._cls)
         self.assertFalse(isinstance(a, Dummy))
         self.assertEqual(a, b)
         self.assertNotEqual(a, d)

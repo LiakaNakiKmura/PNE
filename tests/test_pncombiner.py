@@ -353,7 +353,7 @@ class TestParameterManager():
         self.test_class = self._ClassForTest()
     
     def test_inerated(self):
-        self.assertTrue(isinstance(self.test_class, ParameterManager))
+        self.assertIsInstance(self.test_class, ParameterManager)
     
     def test_get_parameter_name(self):
         self.assertIsWord(self.test_class.name)
@@ -363,7 +363,7 @@ class TestParameterManager():
         self.assertIsWord(self.test_class.get_dataname())
     
     def assertIsWord(self, data):
-        self.assertTrue(isinstance(data, str))
+        self.assertIsInstance(data, str)
         self.assertTrue(len(data) > 0)
 
 class TestOpenLoopParameter():
@@ -371,16 +371,26 @@ class TestOpenLoopParameter():
 
 
 class TestNoiseParameter(TestParameterManager):
+    '''
+    abstract class.
+    Add test to TestParameter Manager that check the dataname is changed if 
+    type of parameter class is changed from tf to noise.
+    Target class has two types: tf (transfer function) and noise. Their dataname
+    is different.
+    '''
+    
     def test_get_parameter_dataname(self):
         dflt_data_name = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.tf)
+        
         tf_data_name = self.test_class.get_dataname()
         self.test_class.set_type(self.test_class.noise)
+        
         noise_data_name = self.test_class.get_dataname()
         
         for data_name in [dflt_data_name, tf_data_name, noise_data_name]:
             # All data names are words.  
-            self.assertTrue(isinstance(data_name, str))
+            self.assertIsInstance(data_name, str)
             self.assertTrue(len(data_name) > 0)
         
         self.assertNotEqual(tf_data_name, noise_data_name)
@@ -485,6 +495,7 @@ class TestRefReader(TestInidivReader, unittest.TestCase):
 @add_msg
 class TestDataSetter(unittest.TestCase):
     # TODO: add test for data setter
+    
     def test_data_setter(self):
         refpar = RefParameter()
         ndb = NoiseDataBase()
@@ -508,7 +519,7 @@ class TestPNparameter(unittest.TestCase):
         attrnames = pn.get_parameter_names()
         for n in attrnames:
             prmtr = getattr(pnpm,n)
-            self.assertTrue(isinstance(prmtr, str))
+            self.assertIsInstance(prmtr, str)
             self.assertTrue(0<len(prmtr))
             self.assertRaises(AttributeError, setattr, *(pnpm, n, 'a'))
             # Raise error if property value is changed.
@@ -529,7 +540,7 @@ class TestPNparameter(unittest.TestCase):
             for name in name_msg_pairs :
                 prmtr = getattr(pnpm,name) 
                 prmtr_msg = pnpm.get_message(usage, prmtr)
-                self.assertTrue(isinstance(prmtr_msg, str))
+                self.assertIsInstance(prmtr_msg, str)
                 self.assertTrue(0<len(prmtr_msg))
       
 

@@ -421,27 +421,48 @@ class TestRefParameter(TestNoiseParameter, unittest.TestCase):
 class TestVCOParameter(TestNoiseParameter, unittest.TestCase):
     _ClassForTest = VCOParameter
 
-@add_msg
-class TestDataSetter(unittest.TestCase):
-    # TODO: add test for data setter
-    _DataBase = NoiseDataBase
-    def setUp(self):
-        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
+class TestIndivDataSetter(UsingPNDataBase):
+    _DataBase  = None
+    _ParameterManager = None
+    _Reader=None
+    _mockpath=None
     
+    def setUp(self):
+        super().setUp()
+        self._set_parameter()
+        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
+        self.data_setter = DataSetter(self._Reader, self._DataBase, self.refpar)
+
     def test_data_setter(self):
-        db = self._DataBase()
         
-        data_setter = DataSetter(CSVIO, self._DataBase, self.refpar)
+        db = self._DataBase()
         dummydata = self.make_dummydata.get_dummydata()
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+        
+        with patch(self._mockpath) as read_mock:
             read_mock.return_value = dummydata
-            data_setter.execute()
+            self.data_setter.execute()
             assert_frame_equal(db.get_data(self.refpar.name), dummydata)
     
     def _set_parameter(self):
-        self.refpar = RefParameter()
+        self.refpar = self._ParameterManager()
+
+@add_msg
+class TestRefDataSetter(TestIndivDataSetter, unittest.TestCase):
+    _DataBase  = NoiseDataBase
+    _ParameterManager = RefParameter
+    _Reader = CSVIO
+    _mockpath = 'src.dataio.csvio.CSVIO.read'
+    
+    def _set_parameter(self):
+        super()._set_parameter()
         self.refpar.set_type(self.refpar.noise)
-        
+
+
+class TestDataSetter(TestIndivDataSetter, unittest.TestCase):
+    _DataBase  = NoiseDataBase
+    _ParameterManager = RefParameter
+    _Reader = CSVIO
+    _mockpath = 'src.dataio.csvio.CSVIO.read'
 
 '''
     

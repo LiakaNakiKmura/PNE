@@ -412,6 +412,13 @@ class TestNoiseParameter(TestParameterManager):
         
         self.assertRaises(ValueError, self.test_class.set_type, None)
         # If invalid value is set to set_type, raise value erorr
+    
+    def test_type_name(self):
+        ndb = NoiseDataBase()
+        tfdb = TransferfuncDataBase()
+        self.assertEqual(self.test_class.tf, tfdb.index_val)
+        self.assertEqual(self.test_class.noise, ndb.index_val)
+
 
 @add_msg
 class TestRefParameter(TestNoiseParameter, unittest.TestCase):
@@ -463,6 +470,8 @@ class TestDataSetter(TestIndivDataSetter, unittest.TestCase):
     _ParameterManager = RefParameter
     _Reader = CSVIO
     _mockpath = 'src.dataio.csvio.CSVIO.read'
+
+
 
 '''
     

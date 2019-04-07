@@ -35,122 +35,6 @@ class PNCombiner(Transaction):
         pass
 
 
-class _PNDataIOCommon(Transaction):
-    '''
-    This is the base class to read or write data that is listed in '_target'
-    from or to output.
-    '''
-    _target = []
-    
-    def __init__(self):
-        self.csvio = CSVIO()
-        self.pndb = PNDataBase()
-        self.pnpm = PNPrmtrMng()
-        self._set_io_setting()
-
-    def execute(self):
-        for name in self._target:
-            parameter, message = self._get_parameter_msg(name)
-            self._do_io(parameter, message)
-    
-    @abc.abstractmethod
-    def _set_io_setting(self):
-        '''
-        Subclass needs to overwrite this method to set the _io_setting as
-        reding or writing defined in PNPrmtrMng. This setting will be used for
-        choosing the message reading or writing.
-        '''
-        self._io_setting = None
-    
-    def _get_parameter_msg(self, name):
-        parameter = getattr(self.pnpm, name)
-        message = self.pnpm.get_message(self._io_setting, parameter)
-        return (parameter, message)
-    
-    @abc.abstractmethod
-    def _do_io(self, parameter, message):
-        '''
-        Subclass is needed to overwrite to set the reading or writing.
-        '''
-        pass
-
-class PNDataReader(_PNDataIOCommon):
-    _target = ['ref', 'vco', 'pd', 'open_loop_gain']
-    
-    def _set_io_setting(self):
-        self._io_setting = self.pnpm.read_setting
-    
-    def _do_io(self, parameter, message):
-        data = self.csvio.read(message)
-        self.pndb.set_noise(parameter, data)
-
-class PNDataWriter(_PNDataIOCommon):
-    _target=['total']
-    
-    def _set_io_setting(self):
-        self._io_setting = self.pnpm.write_setting
-    
-    def _do_io(self, parameter, message):
-        data = self.pndb.get_closeloop_noise(parameter)     
-        self.csvio.write(message, data)
-
-@read_only_getter_decorator({'name':'parameter name'})
-#name must be overwrite in inhirated class.
-class ParameterManager(metaclass = abc.ABCMeta):
-    abc.abstractmethod
-    def get_dataname(self):
-        pass
-
-@read_only_getter_decorator({'name':'open loop'})
-class OpenLoopParameter(ParameterManager):
-    _message = 'open loop of PLL'
-    def get_dataname(self):
-        return self._message
-
-@read_only_getter_decorator({'tf':'transfer_func',
-                             'noise': 'noise'})
-class NoiseParameter(ParameterManager):
-    def __init__(self):
-        self._data_type = self.noise
-        self._make_message_dict()
-    
-    def set_type(self, new_type):
-        if new_type in self._message.keys():
-            self._data_type = new_type
-        else:
-            raise ValueError('{} is invalid type to be set'.format(new_type))
-    
-    def get_dataname(self):
-        return self._message[self._data_type]
-    
-    def _make_message_dict(self):
-        self._message = {self.noise: 'Noise of {}'.format(self.name),
-                         self.tf: 'Transfer function of {}'.format(self.name)}
-    
-@read_only_getter_decorator({'name':'reference'})
-class RefParameter(NoiseParameter):
-    pass
-
-@read_only_getter_decorator({'name':'VCO'})
-class VCOParameter(NoiseParameter):
-    pass
-
-
-class DataSetter(Transaction):
-    def __init__(self, ReaderClass, DatBaseClass,  parmeter_manager_instance):
-        assert issubclass(ReaderClass, Reader),\
-        '{} must be subclass of Reader'.format(ReaderClass)
-        assert issubclass(DatBaseClass, IndivDataBase),\
-        '{} must be subclass of Reader'.format(ReaderClass)
-        
-        self._pr_mng = parmeter_manager_instance
-        self._reader = ReaderClass()
-        self._database = DatBaseClass()
-    
-    def execute(self):
-        data = self._reader.read(self._pr_mng)
-        self._database.set_data(self._pr_mng.name, data)
-
 class PNCalc(Transaction):
     def __init__(self):
         self._ndb = NoiseDataBase()
@@ -386,3 +270,152 @@ class NoiseTransfuncPairsManager():
         noise_names = self.ndb.get_names()
         tf_names = self.tfdb.get_names()
         return list(noise_names & tf_names)
+
+@read_only_getter_decorator({'name':'parameter name'})
+#name must be overwrite in inhirated class.
+class ParameterManager(metaclass = abc.ABCMeta):
+    abc.abstractmethod
+    def get_dataname(self):
+        pass
+
+@read_only_getter_decorator({'name':'open loop'})
+class OpenLoopParameter(ParameterManager):
+    _message = 'open loop of PLL'
+    def get_dataname(self):
+        return self._message
+
+
+class NoiseParameter(ParameterManager):
+    '''
+    Parameter of noises.
+    This parameter has two types
+     tf: transferfunction.
+     noise: noise.
+    '''
+    
+    @property
+    def tf(self):
+        return self.tfdb.index_val
+    
+    @property    
+    def noise(self):
+        return self.ndb.index_val
+    '''
+    Set read only parameter. Make setter of property.
+    '''
+ 
+    def __init__(self):
+        self.tfdb = TransferfuncDataBase()
+        self.ndb = NoiseDataBase()
+        self._data_type = self.noise
+        self._make_message_dict()
+    
+    def set_type(self, new_type):
+        if new_type in self._message.keys():
+            self._data_type = new_type
+        else:
+            raise ValueError('{} is invalid type to be set'.format(new_type))
+    
+    def get_dataname(self):
+        return self._message[self._data_type]
+    
+    def _make_message_dict(self):
+        self._message = {self.noise: 'Noise of {}'.format(self.name),
+                         self.tf: 'Transfer function of {}'.format(self.name)}
+
+    
+@read_only_getter_decorator({'name':'reference'})
+class RefParameter(NoiseParameter):
+    pass
+
+@read_only_getter_decorator({'name':'VCO'})
+class VCOParameter(NoiseParameter):
+    pass
+
+
+class DataSetter(Transaction):
+    def __init__(self, ReaderClass, DatBaseClass,  parmeter_manager_instance):
+        assert issubclass(ReaderClass, Reader),\
+        '{} must be subclass of Reader'.format(ReaderClass)
+        assert issubclass(DatBaseClass, IndivDataBase),\
+        '{} must be subclass of Reader'.format(ReaderClass)
+        
+        self._pr_mng = parmeter_manager_instance
+        self._reader = ReaderClass()
+        self._database = DatBaseClass()
+    
+    def execute(self):
+        data = self._reader.read(self._pr_mng)
+        self._database.set_data(self._pr_mng.name, data)
+    
+class _PNDataIOCommon(Transaction):
+    '''
+    This is the base class to read or write data that is listed in '_target'
+    from or to output.
+    '''
+    _target = []
+    
+    def __init__(self):
+        self.csvio = CSVIO()
+        self.pndb = PNDataBase()
+        self.pnpm = PNPrmtrMng()
+        self._set_io_setting()
+
+    def execute(self):
+        for name in self._target:
+            parameter, message = self._get_parameter_msg(name)
+            self._do_io(parameter, message)
+    
+    @abc.abstractmethod
+    def _set_io_setting(self):
+        '''
+        Subclass needs to overwrite this method to set the _io_setting as
+        reding or writing defined in PNPrmtrMng. This setting will be used for
+        choosing the message reading or writing.
+        '''
+        self._io_setting = None
+    
+    def _get_parameter_msg(self, name):
+        parameter = getattr(self.pnpm, name)
+        message = self.pnpm.get_message(self._io_setting, parameter)
+        return (parameter, message)
+    
+    @abc.abstractmethod
+    def _do_io(self, parameter, message):
+        '''
+        Subclass is needed to overwrite to set the reading or writing.
+        '''
+        pass
+
+class PNDataReader(_PNDataIOCommon):
+    _target = ['ref', 'vco', 'pd', 'open_loop_gain']
+    
+    def _set_io_setting(self):
+        self._io_setting = self.pnpm.read_setting
+    
+    def _do_io(self, parameter, message):
+        data = self.csvio.read(message)
+        self.pndb.set_noise(parameter, data)
+
+
+"""
+class PNDataReader():
+    # TODO: Replace PNDataReader
+    _DataBase_Reader_pair = [[NoiseDataBase, CSVIO, RefParameter]]
+    
+    def __init__(self):
+        pass
+    
+    def make_parameter_instance(self):
+        pass
+"""
+
+class PNDataWriter(_PNDataIOCommon):
+    _target=['total']
+    
+    def _set_io_setting(self):
+        self._io_setting = self.pnpm.write_setting
+    
+    def _do_io(self, parameter, message):
+        data = self.pndb.get_closeloop_noise(parameter)     
+        self.csvio.write(message, data)

@@ -1,0 +1,45 @@
+@startuml
+
+abstract class IndivDataBase{
+    +index_freq
+    +index_val
+    +get_data(name)
+    +set_data(name, data)
+    +get_names()
+}
+
+class NoiseDataBase{
+    +get_names()
+}
+
+class TransferfuncDataBase{
+    +set_mag_deg_data(freq, mag, deg)
+}
+
+class CloseLoopDataBase{
+}
+class NoiseTransfuncPairsManager{
+    get_pair_names
+}
+
+NoiseDataBase -up-|> IndivDataBase
+TransferfuncDataBase -up-|> IndivDataBase
+CloseLoopDataBase -up-|> IndivDataBase
+NoiseTransfuncPairsManager --> NoiseDataBase
+NoiseTransfuncPairsManager --> TransferfuncDataBase
+
+IndivDataBase -ri-> PNDataBase
+
+class PNDataBase{
+    <<singleton>>
+    +set_noise(name, data)
+    +get_noise(name)
+    +get_noise_names()
+    +set_transfer_func(name, data)
+    +get_transfer_func(name)
+    +set_closeloop_noise(name, data)
+    +get_closeloop_noise(name)
+    +reflesh_all()
+}
+
+@enduml

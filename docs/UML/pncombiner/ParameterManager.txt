@@ -1,0 +1,33 @@
+@startuml
+
+abstract class ParameterManager{
+    +name
+    +get_dataname()
+    +set_type(IndivDataBase().index_val)
+}
+
+abstract class IndivDataBase{
+    +index_val
+}
+
+class RefParameter{
+    +name
+    -_acceptable_databases
+}
+
+class VCOParameter{
+    +name
+    -_acceptable_databases
+}
+
+class OpenLoopParameter{
+    +name
+    -_acceptable_databases
+}
+
+OpenLoopParameter -up-|> ParameterManager
+RefParameter -up-|> ParameterManager
+VCOParameter -up-|> ParameterManager
+ParameterManager -ri> IndivDataBase
+
+@enduml

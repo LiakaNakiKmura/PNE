@@ -377,15 +377,11 @@ class TestParameterManager(UsingPNDataBase):
     ParameterManager class has its name and dataname that is used to ask user.
     '''
     
-    '''
-    Parameter for inirited class.
-    '''
+    #Parameter for inirited class.
     _ClassForTest = None
     _acceptable_databases = None
     
-    '''
-    common parameter
-    '''
+    #common parameter
     _total_database_list = [NoiseDataBase, TransferfuncDataBase,
                             CloseLoopDataBase]
     
@@ -432,55 +428,16 @@ class TestParameterManager(UsingPNDataBase):
 class TestOpenLoopParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = OpenLoopParameter
     _acceptable_databases = [TransferfuncDataBase]
-
-
-class TestNoiseParameter(TestParameterManager):
-    '''
-    abstract class.
-    Add test to TestParameter Manager that check the dataname is changed if 
-    type of parameter class is changed from tf to noise.
-    Target class has two types: tf (transfer function) and noise. Their dataname
-    is different.
-    '''
-    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
     
-    def test_get_parameter_dataname(self):
-        dflt_data_name = self.test_class.get_dataname()
-        self.test_class.set_type(self.test_class.tf)
-        
-        tf_data_name = self.test_class.get_dataname()
-        self.test_class.set_type(self.test_class.noise)
-        
-        noise_data_name = self.test_class.get_dataname()
-        
-        for data_name in [dflt_data_name, tf_data_name, noise_data_name]:
-            # All data names are words.  
-            self.assertIsInstance(data_name, str)
-            self.assertTrue(len(data_name) > 0)
-        
-        self.assertNotEqual(tf_data_name, noise_data_name)
-        # Datanome for transger function and noise must be different.
-
-        self.assertEqual(dflt_data_name, noise_data_name)
-        # Datanome for transger function and noise must be different.
-        
-        self.assertRaises(ValueError, self.test_class.set_type, None)
-        # If invalid value is set to set_type, raise value erorr
-    
-    def test_type_name(self):
-        ndb = NoiseDataBase()
-        tfdb = TransferfuncDataBase()
-        self.assertEqual(self.test_class.tf, tfdb.index_val)
-        self.assertEqual(self.test_class.noise, ndb.index_val)
-
-
 @add_msg
-class TestRefParameter(TestNoiseParameter, unittest.TestCase):
+class TestRefParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = RefParameter
-    
+    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
+
 @add_msg
-class TestVCOParameter(TestNoiseParameter, unittest.TestCase):
+class TestVCOParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = VCOParameter
+    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
 class TestIndivDataSetter(UsingPNDataBase):
     _DataBase  = None

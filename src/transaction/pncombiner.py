@@ -276,86 +276,44 @@ class NoiseTransfuncPairsManager():
 class ParameterManager(metaclass = abc.ABCMeta):
     _acceptable_databases = []
     def __init__(self):
-        self._make_message_dict()
+        self._make_datanames_dict()
     
-    abc.abstractmethod
     def get_dataname(self):
-        pass
+        '''
+        Data name refers to what type of data(noise, transferfuntion...) and
+        Prameter.
+        '''
+        return self._datanames[self._data_type]
     
     def set_type(self, new_type):
-        if new_type in self._message.keys():
+        if new_type in self._datanames.keys():
             self._data_type = new_type
         else:
             raise ValueError('{} is invalid type to be set'.format(new_type))
     
-    def _make_message_dict(self):
-        self._message = {}
+    def _make_datanames_dict(self):
+        # Dataname is made from database and parameter name.
+        self._datanames = {}
         for DB in self._acceptable_databases:
             db =DB()
-            self._message[db.index_val] = '{} of {}'.format(\
+            self._datanames[db.index_val] = '{} of {}'.format(\
                          db.index_val, self.name)
-            print(self._message[db.index_val])
         
         self._data_type = self._acceptable_databases[0]().index_val
         # init data_type is first database in self._acceptable_databases.
 
 @read_only_getter_decorator({'name':'open loop'})
 class OpenLoopParameter(ParameterManager):
-    _message = 'open loop of PLL'
+    #_message = 'open loop of PLL'
     _acceptable_databases = [TransferfuncDataBase]
-    def get_dataname(self):
-        return self._message[self._data_type]
 
-
-class NoiseParameter(ParameterManager):
-    '''
-    Parameter of noises.
-    This parameter has two types
-     tf: transferfunction.
-     noise: noise.
-    '''
-    
-    @property
-    def tf(self):
-        return self.tfdb.index_val
-    
-    @property    
-    def noise(self):
-        return self.ndb.index_val
-    '''
-    Set read only parameter. Make setter of property.
-    '''
- 
-    def __init__(self):
-        self.tfdb = TransferfuncDataBase()
-        self.ndb = NoiseDataBase()
-        self._data_type = self.noise
-        self._make_message_dict()
-    
-    """
-    def set_type(self, new_type):
-        if new_type in self._message.keys():
-            self._data_type = new_type
-        else:
-            raise ValueError('{} is invalid type to be set'.format(new_type))
-    """
-    
-    def get_dataname(self):
-        return self._message[self._data_type]
-    
-    def _make_message_dict(self):
-        self._message = {self.noise: 'Noise of {}'.format(self.name),
-                         self.tf: 'Transfer function of {}'.format(self.name)}
-
-    
 @read_only_getter_decorator({'name':'reference'})
-class RefParameter(NoiseParameter):
-    pass
+class RefParameter(ParameterManager):
+    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
 @read_only_getter_decorator({'name':'VCO'})
-class VCOParameter(NoiseParameter):
-    pass
-
+class VCOParameter(ParameterManager):
+    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
 class DataSetter(Transaction):
     def __init__(self, ReaderClass, DatBaseClass,  parmeter_manager_instance):

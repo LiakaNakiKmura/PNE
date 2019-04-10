@@ -148,13 +148,20 @@ class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
                             (CloseLoopDataBase,  IndivDataBase)
                             )
 
+@add_msg  
+class TestIndivDataBaseCommon(UsingPNDataBase, unittest.TestCase):
+    def test_indiv_index_val(self):
+        # Each database index value must be indivisual.
+        database_list = [NoiseDataBase, TransferfuncDataBase, CloseLoopDataBase]
+        indices =[db().index_val for db in database_list]
+        self.assertEqual(len(indices), len(set(indices)))
+
 class IndivDataBaseSetGetChk(UsingPNDataBase):
     '''
     This is the test for indivisual Data Base.
     target data base is set on _ClassForTest.
     Each class is the data base for each parameter. Data is deformed and 
-    transfer to the PNDataBase.
-    
+    transfer to the PNDataBase.    
     Because this test class uses pndb, this class inherate UsingPNDataBase.
     '''
     
@@ -298,28 +305,7 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
             test_database.set_data(name, self._make_rand_dummy_data())
         
         self.assertCountEqual(namelist,  test_database.get_names())
-    
 
-    
-    def _get_subclasses(self, superclasses):
-        """
-        get the subclasses from superclasses.
-        superclasses: superclasses list.
-        """
-        
-        subclasses = []
-        for supcls in superclasses:
-            subclasses.extend(supcls.__subclasses__())
-        for clss in superclasses:
-            if clss in subclasses:
-                subclasses.remove(clss)
-        totalsubclasses = subclasses.copy()
-        if(len(subclasses) > 0):
-            totalsubclasses.extend(self._get_subclasses(subclasses))
-        return list(set(totalsubclasses))
-        
-        
-    
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
     _ClassForTest = NoiseDataBase
@@ -374,15 +360,37 @@ class TestCommonNamesDataBase(UsingPNDataBase, unittest.TestCase):
 
 # FIXME: Refactoring to reading data.
 
+@add_msg
+class TestParameterManagerTotal(UsingPNDataBase,unittest.TestCase):
+    def test_original_name(self):
+        """
+        name must be indivisual in each other for parameter manager.
+        """
+        _parameter_list=[OpenLoopParameter, RefParameter, VCOParameter]
+        # TODO: Is needed to be parameter list to pncombiner.
+        names = [p.name for p in _parameter_list]
+        self.assertEqual(len(names), len(set(names)))
 
-class TestParameterManager():
+class TestParameterManager(UsingPNDataBase):
     '''
     Test for ParameterManager class.
     ParameterManager class has its name and dataname that is used to ask user.
     '''
-    # TODO: Check the name is indivisual in each other.
+    
+    '''
+    Parameter for inirited class.
+    '''
     _ClassForTest = None
+    _acceptable_databases = None
+    
+    '''
+    common parameter
+    '''
+    _total_database_list = [NoiseDataBase, TransferfuncDataBase,
+                            CloseLoopDataBase]
+    
     def setUp(self):
+        super().setUp()
         self.test_class = self._ClassForTest()
     
     def test_inerated(self):
@@ -398,10 +406,32 @@ class TestParameterManager():
     def assertIsWord(self, data):
         self.assertIsInstance(data, str)
         self.assertTrue(len(data) > 0)
+    
+    def test_set_type(self):
+        # Prameter Manager return the dataname by setting types.
+        # If data is not acceptable, raise valueerror.
+        self._make_unacceptable_databases()
+        
+        for DB in self._acceptable_databases:
+            # This will not raise error.
+            db = DB()
+            self.test_class.set_type(db.index_val)
+        
+        for DB in self._unacceptable_databases:
+            # This will raise error.
+            db = DB()
+            self.assertRaises(ValueError, self.test_class.set_type, 
+                              db.index_val)
+    
+    def _make_unacceptable_databases(self):
+        self._unacceptable_databases = self._total_database_list.copy()
+        for db in self._acceptable_databases:
+            self._unacceptable_databases.remove(db)
 
 @add_msg
-class TestOpenLoopParameter(TestParameterManager):
+class TestOpenLoopParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = OpenLoopParameter
+    _acceptable_databases = [TransferfuncDataBase]
 
 
 class TestNoiseParameter(TestParameterManager):
@@ -412,6 +442,7 @@ class TestNoiseParameter(TestParameterManager):
     Target class has two types: tf (transfer function) and noise. Their dataname
     is different.
     '''
+    _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
     
     def test_get_parameter_dataname(self):
         dflt_data_name = self.test_class.get_dataname()
@@ -491,18 +522,35 @@ class TestRefDataSetter(TestIndivDataSetter, unittest.TestCase):
     """
     
 @add_msg
-class TestNoiseDataSetter(TestIndivDataSetter, unittest.TestCase):
+class TestNoiseDataSetter(unittest.TestCase):
     _DataBase  = NoiseDataBase
     _ParameterManager = RefParameter
     _Reader = CSVIO
     _mockpath = 'src.dataio.csvio.CSVIO.read'
     
-    def test_transunc_data(self):
-        self._DataBase = TransferfuncDataBase
-        self.setUp()
-        self.test_data_setter()
-        print(self._DataBase)
-        #TODO: Change test to check the data name.
+    def setUp(self):
+        super().setUp()
+        self._set_parameter()
+        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
+        
+    def _set_parameter(self):
+        self.refpar = self._ParameterManager()
+        
+    def test_diff_test_name(self):
+        calls = []
+        for db in [NoiseDataBase, TransferfuncDataBase]:
+            dummydata = self.make_dummydata.get_dummydata()
+            self.data_setter = DataSetter(self._Reader, db, self.refpar)
+            with patch(self._mockpath) as read_mock:
+                read_mock.return_value = dummydata
+                self.data_setter.execute()                
+                calls.append(list(read_mock.call_args))
+        
+        first_call = calls.pop(0)
+        for call in calls:
+            # different data name is called.
+            # data name is first argument.
+            self.assertNotEqual(first_call[0], call[0])
         
 '''
     

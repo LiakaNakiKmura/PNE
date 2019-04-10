@@ -274,15 +274,37 @@ class NoiseTransfuncPairsManager():
 @read_only_getter_decorator({'name':'parameter name'})
 #name must be overwrite in inhirated class.
 class ParameterManager(metaclass = abc.ABCMeta):
+    _acceptable_databases = []
+    def __init__(self):
+        self._make_message_dict()
+    
     abc.abstractmethod
     def get_dataname(self):
         pass
+    
+    def set_type(self, new_type):
+        if new_type in self._message.keys():
+            self._data_type = new_type
+        else:
+            raise ValueError('{} is invalid type to be set'.format(new_type))
+    
+    def _make_message_dict(self):
+        self._message = {}
+        for DB in self._acceptable_databases:
+            db =DB()
+            self._message[db.index_val] = '{} of {}'.format(\
+                         db.index_val, self.name)
+            print(self._message[db.index_val])
+        
+        self._data_type = self._acceptable_databases[0]().index_val
+        # init data_type is first database in self._acceptable_databases.
 
 @read_only_getter_decorator({'name':'open loop'})
 class OpenLoopParameter(ParameterManager):
     _message = 'open loop of PLL'
+    _acceptable_databases = [TransferfuncDataBase]
     def get_dataname(self):
-        return self._message
+        return self._message[self._data_type]
 
 
 class NoiseParameter(ParameterManager):
@@ -310,11 +332,13 @@ class NoiseParameter(ParameterManager):
         self._data_type = self.noise
         self._make_message_dict()
     
+    """
     def set_type(self, new_type):
         if new_type in self._message.keys():
             self._data_type = new_type
         else:
             raise ValueError('{} is invalid type to be set'.format(new_type))
+    """
     
     def get_dataname(self):
         return self._message[self._data_type]
@@ -345,8 +369,16 @@ class DataSetter(Transaction):
         self._database = DatBaseClass()
     
     def execute(self):
-        data = self._reader.read(self._pr_mng)
+        self._set_parameter()
+        data = self._reader.read(self._pr_mng.get_dataname())
         self._database.set_data(self._pr_mng.name, data)
+        
+    def _set_parameter(self):
+        # FIXME
+        try:
+            self._pr_mng.set_type(self._database.index_val)
+        except:
+            pass
     
 class _PNDataIOCommon(Transaction):
     '''
@@ -387,6 +419,7 @@ class _PNDataIOCommon(Transaction):
         '''
         pass
 
+
 class PNDataReader(_PNDataIOCommon):
     _target = ['ref', 'vco', 'pd', 'open_loop_gain']
     
@@ -401,14 +434,19 @@ class PNDataReader(_PNDataIOCommon):
 """
 class PNDataReader():
     # TODO: Replace PNDataReader
-    _DataBase_Reader_pair = [[NoiseDataBase, CSVIO, RefParameter]]
+    _DataBase_Reader_pair = [[NoiseDataBase, CSVIO, RefParameter],
+                             [TransferfuncDataBase, CSVIO, RefParameter],
+                             [NoiseDataBase, CSVIO, VCOParameter],
+                             [TransferfuncDataBase, CSVIO, VCOParameter],
+                             [TransferfuncDataBase, CSVIO, OpenLoopParameter]
+                             ]
     
     def __init__(self):
         pass
     
-    def make_parameter_instance(self):
+    def set_datasetter(self, init_data_pairs):     
         pass
-"""
+"""  
 
 class PNDataWriter(_PNDataIOCommon):
     _target=['total']

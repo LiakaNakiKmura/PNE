@@ -123,13 +123,7 @@ class TestCombinePN(unittest.TestCase):
             self.assertTrue(callable(getattr(PNDataBase, mth)))
 
 
-@add_msg    
-class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
-    # Test inheration of interfaces.
-    _sub_sup_class_pairs = ((NoiseDataBase, IndivDataBase),
-                            (TransferfuncDataBase, IndivDataBase),
-                            (CloseLoopDataBase,  IndivDataBase)
-                            )
+
 
 
 class MakeDummyDataForDataBase():
@@ -145,7 +139,14 @@ class MakeDummyDataForDataBase():
         val = Series(-20/np.sort(np.random.rand(length))[::-1] , 
                      name = self.database.index_val)
         return  DataFrame([freq, val]).T
-
+    
+@add_msg    
+class TestIndivisualDataBaseInheriting(Inheration_test_base,unittest.TestCase):
+    # Test inheration of interfaces.
+    _sub_sup_class_pairs = ((NoiseDataBase, IndivDataBase),
+                            (TransferfuncDataBase, IndivDataBase),
+                            (CloseLoopDataBase,  IndivDataBase)
+                            )
 
 class IndivDataBaseSetGetChk(UsingPNDataBase):
     '''
@@ -297,6 +298,26 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
             test_database.set_data(name, self._make_rand_dummy_data())
         
         self.assertCountEqual(namelist,  test_database.get_names())
+    
+
+    
+    def _get_subclasses(self, superclasses):
+        """
+        get the subclasses from superclasses.
+        superclasses: superclasses list.
+        """
+        
+        subclasses = []
+        for supcls in superclasses:
+            subclasses.extend(supcls.__subclasses__())
+        for clss in superclasses:
+            if clss in subclasses:
+                subclasses.remove(clss)
+        totalsubclasses = subclasses.copy()
+        if(len(subclasses) > 0):
+            totalsubclasses.extend(self._get_subclasses(subclasses))
+        return list(set(totalsubclasses))
+        
         
     
 @add_msg  
@@ -359,6 +380,7 @@ class TestParameterManager():
     Test for ParameterManager class.
     ParameterManager class has its name and dataname that is used to ask user.
     '''
+    # TODO: Check the name is indivisual in each other.
     _ClassForTest = None
     def setUp(self):
         self.test_class = self._ClassForTest()
@@ -377,7 +399,8 @@ class TestParameterManager():
         self.assertIsInstance(data, str)
         self.assertTrue(len(data) > 0)
 
-class TestOpenLoopParameter():
+@add_msg
+class TestOpenLoopParameter(TestParameterManager):
     _ClassForTest = OpenLoopParameter
 
 
@@ -460,19 +483,27 @@ class TestRefDataSetter(TestIndivDataSetter, unittest.TestCase):
     _Reader = CSVIO
     _mockpath = 'src.dataio.csvio.CSVIO.read'
     
+    """
     def _set_parameter(self):
         super()._set_parameter()
         self.refpar.set_type(self.refpar.noise)
-
-
-class TestDataSetter(TestIndivDataSetter, unittest.TestCase):
+        #TODO: get parameter from data base.
+    """
+    
+@add_msg
+class TestNoiseDataSetter(TestIndivDataSetter, unittest.TestCase):
     _DataBase  = NoiseDataBase
     _ParameterManager = RefParameter
     _Reader = CSVIO
     _mockpath = 'src.dataio.csvio.CSVIO.read'
-
-
-
+    
+    def test_transunc_data(self):
+        self._DataBase = TransferfuncDataBase
+        self.setUp()
+        self.test_data_setter()
+        print(self._DataBase)
+        #TODO: Change test to check the data name.
+        
 '''
     
     """

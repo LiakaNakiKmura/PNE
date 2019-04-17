@@ -1,0 +1,18 @@
+@startuml
+
+User --> DataSetter: make instance. Pass Reader, DataBase,\nParameterManager classes.
+DataSetter --> Reader: make instance.
+DataSetter --> DataBase: make instance.
+DataSetter --> ParameterManager: make instance.
+DataSetter --> Reader: set_type(DataBase.index_val)
+
+newpage
+
+User --> DataSetter: execute()
+DataSetter --> ParameterManager: get_dataname()
+DataSetter <-- ParameterManager: dataname
+DataSetter --> Reader: read(dataname)
+DataSetter <-- Reader: data
+DataSetter --> DataBase: set_data(data)
+
+@enduml

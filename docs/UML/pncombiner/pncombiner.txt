@@ -13,15 +13,20 @@ PNCombiner --> PNDataReader
 PNCombiner --> PNPrmtrMng
 
 class PNDataWriter{
-    +excute()
 }
 class PNDataReader{
-    +excute()
 }
 class PNcalc{
-    +excute()
 }
 class PNPrmtrMng
+
+abstract class IndivDataBase{
+    +index_freq
+    +index_val
+    +get_data(name)
+    +set_data(name, data)
+    +get_names()
+}
 
 PNDataWriter --up|> Transaction
 PNDataReader --up|> Transaction
@@ -32,6 +37,11 @@ class PNDataBase{
 }
 PNDataWriter --do> PNDataBase
 PNDataReader --do> PNDataBase
-PNcalc --do> PNDataBase
+PNcalc --do> IndivDataBase
+IndivDataBase --ri> PNDataBase
+
+NoiseDataBase -up-|> IndivDataBase
+TransferfuncDataBase -up-|> IndivDataBase
+CloseLoopDataBase -up-|> IndivDataBase
 
 @enduml

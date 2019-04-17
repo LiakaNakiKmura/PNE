@@ -1,0 +1,39 @@
+@startuml
+
+abstract class ParameterManager{
+    +name
+    +get_dataname()
+    +set_type(IndivDataBase().index_val)
+}
+
+abstract class IndivDataBase{
+    +set_data()
+}
+
+abstract class Reader{
+    +read()
+}
+
+
+class DataSetter{
+    +__init__(Reader, IndivDataBase, ParameterManager)
+}
+
+
+CSVIO -up-|> Reader
+
+OpenLoopParameter -up-|> ParameterManager
+RefParameter -up-|> ParameterManager
+VCOParameter -up-|> ParameterManager
+ParameterManager -ri> IndivDataBase
+
+NoiseDataBase -up-|> IndivDataBase
+TransferfuncDataBase -up-|> IndivDataBase
+CloseLoopDataBase -up-|> IndivDataBase
+
+
+DataSetter -do-> ParameterManager
+DataSetter -do-> IndivDataBase
+DataSetter -do-> Reader
+
+@enduml

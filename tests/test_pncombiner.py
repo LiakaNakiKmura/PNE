@@ -130,14 +130,21 @@ class MakeDummyDataForDataBase():
     '''
     This class make dummy data. That fits normal format.
     '''
-    def __init__(self, DataBase):
-        self.database = DataBase()
+    def __init__(self, DataBase = None):
+        if DataBase is not None:
+            self.database = DataBase()
+        else:
+            self.database = None
     
-    def get_dummydata(self, length = 10):
+    def get_dummydata(self, DataBase=None, length = 10):
+        if DataBase is not None:
+            self.database = DataBase()
+            
         freq = Series([10**i for i in range(length)], 
                        name = self.database.index_freq)
         val = Series(-20/np.sort(np.random.rand(length))[::-1] , 
                      name = self.database.index_val)
+        
         return  DataFrame([freq, val]).T
     
 @add_msg    
@@ -439,110 +446,64 @@ class TestVCOParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = VCOParameter
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
-class TestIndivDataSetter(UsingPNDataBase):
+@add_msg
+class TestDataSetter(UsingPNDataBase, unittest.TestCase):
     _DataBase  = None
-    _ParameterManager = None
-    _Reader=None
-    _mockpath=None
+    _set_class_pairs=[[CSVIO, NoiseDataBase, RefParameter], 
+                      [CSVIO, TransferfuncDataBase, VCOParameter], 
+                      [CSVIO, NoiseDataBase, VCOParameter],
+                      [CSVIO, TransferfuncDataBase, OpenLoopParameter]
+                      ]
+    _Reader_mockpath_pairs={CSVIO:'src.dataio.csvio.CSVIO.read'}
+    #TODO: Add test for DataSetter
     
     def setUp(self):
         super().setUp()
-        self._set_parameter()
-        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
-        self.data_setter = DataSetter(self._Reader, self._DataBase, self.refpar)
-
+        self.dummydata_maker = MakeDummyDataForDataBase()
+    
     def test_data_setter(self):
-        
-        db = self._DataBase()
-        dummydata = self.make_dummydata.get_dummydata()
-        
-        with patch(self._mockpath) as read_mock:
-            read_mock.return_value = dummydata
-            self.data_setter.execute()
-            assert_frame_equal(db.get_data(self.refpar.name), dummydata)
+        for pair in self._set_class_pairs:
+            self._test_each_data(*pair)
     
-    def _set_parameter(self):
-        self.refpar = self._ParameterManager()
+    def _test_each_data(self, _Reader, _DataBase, _ParamaterManager):
+        # test DataSetter read data from _Reader with Parameter Manager name.
+        # set to Reader.
+        
+        # Make instances
+        db = _DataBase()
+        paramng = _ParamaterManager()
+        dummydata = self.dummydata_maker.get_dummydata(_DataBase)
+        
+        data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
+        self._test_datasetter_exe(self._Reader_mockpath_pairs[_Reader],
+                                  dummydata, data_setter)
+        assert_frame_equal(db.get_data(paramng.name), dummydata) 
 
-@add_msg
-class TestRefDataSetter(TestIndivDataSetter, unittest.TestCase):
-    _DataBase  = NoiseDataBase
-    _ParameterManager = RefParameter
-    _Reader = CSVIO
-    _mockpath = 'src.dataio.csvio.CSVIO.read'
-    
-    """
-    def _set_parameter(self):
-        super()._set_parameter()
-        self.refpar.set_type(self.refpar.noise)
-        #TODO: get parameter from data base.
-    """
-    
-@add_msg
-class TestNoiseDataSetter(unittest.TestCase):
-    _DataBase  = NoiseDataBase
-    _ParameterManager = RefParameter
-    _Reader = CSVIO
-    _mockpath = 'src.dataio.csvio.CSVIO.read'
-    
-    def setUp(self):
-        super().setUp()
-        self._set_parameter()
-        self.make_dummydata = MakeDummyDataForDataBase(self._DataBase)
-        
-    def _set_parameter(self):
-        self.refpar = self._ParameterManager()
-        
     def test_diff_test_name(self):
+        # Test call pattern is different when data base is changed to the same
+        # parameter.
+        _DataBases =  [NoiseDataBase, TransferfuncDataBase]
+        dummydata = self.dummydata_maker.get_dummydata(_DataBases[0])
+        mock_path ='src.dataio.csvio.CSVIO.read'
         calls = []
-        for db in [NoiseDataBase, TransferfuncDataBase]:
-            dummydata = self.make_dummydata.get_dummydata()
-            self.data_setter = DataSetter(self._Reader, db, self.refpar)
-            with patch(self._mockpath) as read_mock:
-                read_mock.return_value = dummydata
-                self.data_setter.execute()                
-                calls.append(list(read_mock.call_args))
+
+        for DB in _DataBases:
+            data_setter = DataSetter(CSVIO, DB, RefParameter)            
+            read_mock = self._test_datasetter_exe(mock_path, dummydata, 
+                                                  data_setter)
+            calls.append(list(read_mock.call_args))
         
         first_call = calls.pop(0)
         for call in calls:
             # different data name is called.
             # data name is first argument.
             self.assertNotEqual(first_call[0], call[0])
-        
-'''
     
-    """
-    def _set_open_loop_gain(self):
-        self._olg = [30-20*i+i/self._data_size[0]*np.pi*1j\
-                      for i in range(self._data_size[0])]
-        self._tfdb.set_data(self._pnpm.open_loop_gain, self._olg)
-    """
-    
-    def _make_return_value(self):
-        # name must be string of msg 
-        self._return_values ={name: np.random.rand(*self._data_size)\
-                              for name in self._name_str_pairs.keys()}
-    
-    def _side_effect_generator(self):
-        def side_effect(msg):
-            for name in self._return_values.keys():
-                if re.match('noise', msg, flags = re.I) is not None:
-                    # If matched, return not None.
-                    return np.random.rand(*self._data_size)
-        return side_effect
-    
-    def test_read_data(self):
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
-            read_mock.side_effect =self._side_effect_generator()
-            self._reader.execute()
-    
-    def test_inherited(self):
-        issubclass(self._ClassForTest, DataReader)
-"""
-class TestRefReader(TestInidivReader, unittest.TestCase):
-    _ClassForTest = RefDataReader
-"""
-'''
+    def _test_datasetter_exe(self, mock_path, dummydata, data_setter):
+        with patch(mock_path) as read_mock:
+            read_mock.return_value = dummydata
+            data_setter.execute()              
+            return read_mock
 
 
 @add_msg

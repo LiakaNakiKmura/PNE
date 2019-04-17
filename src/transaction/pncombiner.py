@@ -316,28 +316,29 @@ class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
 class DataSetter(Transaction):
-    def __init__(self, ReaderClass, DatBaseClass,  parmeter_manager_instance):
-        assert issubclass(ReaderClass, Reader),\
-        '{} must be subclass of Reader'.format(ReaderClass)
-        assert issubclass(DatBaseClass, IndivDataBase),\
-        '{} must be subclass of Reader'.format(ReaderClass)
+    def __init__(self, ReaderClass, DatBaseClass,  ParameterManagerClass):
+        self.check_inherited(ReaderClass, DatBaseClass,  ParameterManagerClass)
         
-        self._pr_mng = parmeter_manager_instance
         self._reader = ReaderClass()
         self._database = DatBaseClass()
+        self._pr_mng = ParameterManagerClass()
+        self._pr_mng.set_type(self._database.index_val)
     
     def execute(self):
-        self._set_parameter()
         data = self._reader.read(self._pr_mng.get_dataname())
         self._database.set_data(self._pr_mng.name, data)
         
-    def _set_parameter(self):
-        # FIXME
-        try:
-            self._pr_mng.set_type(self._database.index_val)
-        except:
-            pass
-    
+    def check_inherited(self, ReaderClass, DatBaseClass,  
+                        ParameterManagerClass):
+        inheritance_pair = {ReaderClass: Reader,
+                            DatBaseClass: IndivDataBase,
+                            ParameterManagerClass: ParameterManager}
+        
+        for Class in (ReaderClass, DatBaseClass,  ParameterManagerClass):
+            parent = inheritance_pair[Class]
+            assert issubclass(Class, parent),\
+            '{} must be subclass of Reader'.format(parent)
+
 class _PNDataIOCommon(Transaction):
     '''
     This is the base class to read or write data that is listed in '_target'

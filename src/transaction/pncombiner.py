@@ -316,6 +316,15 @@ class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
 class DataSetter(Transaction):
+    '''
+    DataSetter set data of ParameterManager from Reder to Database.
+    ReaderClass: subclass of Reader
+    DataBaseClass: subclass of IndivDataBase
+    ParameterManagerClass: subclass of ParameterManager
+    
+    Combination of command pattern, Factory pattern, Staratagy pattern.
+    '''
+    
     def __init__(self, ReaderClass, DatBaseClass,  ParameterManagerClass):
         self.check_inherited(ReaderClass, DatBaseClass,  ParameterManagerClass)
         
@@ -323,6 +332,7 @@ class DataSetter(Transaction):
         self._database = DatBaseClass()
         self._pr_mng = ParameterManagerClass()
         self._pr_mng.set_type(self._database.index_val)
+        # prameter manager needed to know what kind of database.
     
     def execute(self):
         data = self._reader.read(self._pr_mng.get_dataname())

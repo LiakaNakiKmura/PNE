@@ -325,6 +325,10 @@ class DataSetter(Transaction):
     Combination of command pattern, Factory pattern, Staratagy pattern.
     '''
     
+    '''
+    FIXME: InputData is comberted to DataFrame
+    '''
+    
     def __init__(self, ReaderClass, DatBaseClass,  ParameterManagerClass):
         self.check_inherited(ReaderClass, DatBaseClass,  ParameterManagerClass)
         
@@ -388,8 +392,7 @@ class _PNDataIOCommon(Transaction):
         '''
         pass
 
-
-class PNDataReader(_PNDataIOCommon):
+class PNDataReader2(_PNDataIOCommon):
     _target = ['ref', 'vco', 'pd', 'open_loop_gain']
     
     def _set_io_setting(self):
@@ -399,23 +402,27 @@ class PNDataReader(_PNDataIOCommon):
         data = self.csvio.read(message)
         self.pndb.set_noise(parameter, data)
 
-
-"""
-class PNDataReader():
+class PNDataReader(Transaction):
     # TODO: Replace PNDataReader
-    _DataBase_Reader_pair = [[NoiseDataBase, CSVIO, RefParameter],
-                             [TransferfuncDataBase, CSVIO, RefParameter],
-                             [NoiseDataBase, CSVIO, VCOParameter],
-                             [TransferfuncDataBase, CSVIO, VCOParameter],
-                             [TransferfuncDataBase, CSVIO, OpenLoopParameter]
+    _DataBase_Reader_pair = [[CSVIO, NoiseDataBase, RefParameter],
+                             [CSVIO, TransferfuncDataBase, RefParameter],
+                             [CSVIO, NoiseDataBase, VCOParameter],
+                             [CSVIO, TransferfuncDataBase, VCOParameter],
+                             [CSVIO, TransferfuncDataBase, OpenLoopParameter]
                              ]
     
     def __init__(self):
-        pass
+        self._set_datasetter()
     
-    def set_datasetter(self, init_data_pairs):     
-        pass
-"""  
+    def execute(self):
+        for datasetter in self.datasetters:
+            datasetter.execute()
+    
+    def _set_datasetter(self):
+        self.datasetters = []
+        for pair in self._DataBase_Reader_pair:
+            self.datasetters.append(DataSetter(*pair))
+
 
 class PNDataWriter(_PNDataIOCommon):
     _target=['total']

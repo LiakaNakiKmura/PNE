@@ -130,15 +130,15 @@ class MakeDummyDataForDataBase():
     '''
     This class make dummy data. That fits normal format.
     '''
-    def __init__(self, DataBase = None):
-        if DataBase is not None:
-            self.database = DataBase()
+    def __init__(self, DataBaseClass = None):
+        if DataBaseClass is not None:
+            self.database = DataBaseClass()
         else:
             self.database = None
     
-    def get_dummydata(self, DataBase=None, length = 10):
-        if DataBase is not None:
-            self.database = DataBase()
+    def get_dummydata(self, DataBaseClass=None, length = 10):
+        if DataBaseClass is not None:
+            self.database = DataBaseClass()
             
         freq = Series([10**i for i in range(length)], 
                        name = self.database.index_freq)
@@ -455,7 +455,10 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
                       [CSVIO, TransferfuncDataBase, OpenLoopParameter]
                       ]
     _Reader_mockpath_pairs={CSVIO:'src.dataio.csvio.CSVIO.read'}
-    #TODO: Add test for DataSetter
+    
+    '''
+    FIXME: AddTest InputData is comberted to DataFrame
+    '''
     
     def setUp(self):
         super().setUp()
@@ -473,6 +476,20 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
         db = _DataBase()
         paramng = _ParamaterManager()
         dummydata = self.dummydata_maker.get_dummydata(_DataBase)
+        
+        data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
+        self._test_datasetter_exe(self._Reader_mockpath_pairs[_Reader],
+                                  dummydata, data_setter)
+        assert_frame_equal(db.get_data(paramng.name), dummydata) 
+    
+    def test_no_df_data_set(self):
+        _Reader = CSVIO, 
+        _DataBase = NoiseDataBase
+        _ParamaterManager = RefParameter
+        
+        db = _DataBase()
+        paramng = _ParamaterManager()
+        dummydata = [[1,10,100], [-20,-40,-60]]
         
         data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
         self._test_datasetter_exe(self._Reader_mockpath_pairs[_Reader],
@@ -685,16 +702,19 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
         message of reader.
         """
         
+        
         def _side_effect(message):
             '''
             return the dummy data of self._inputdata. The data is chosen by 
             message. message is transformed into parameter in self._msg_para.
             '''
             return self._inputdata[self._msg_para[message]]
+        
+        
         return _side_effect
     
 
-    def test_readdata(self):           
+    def _test_readdata(self):           
         with patch('src.dataio.csvio.CSVIO.read') as read_mock:
             read_mock.side_effect =self._input_side_effect_generator()
             
@@ -704,6 +724,76 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
             for prmtr in self._reading_list:
                 assert_frame_equal(self.pndb.get_noise(prmtr), 
                                    self._inputdata[prmtr])
+
+@add_msg
+class TestCombineRead2(UsingPNDataBase, unittest.TestCase):
+    '''
+    This is the test for reading data of transfer function, phasenoise dadta,
+    noise data.
+    '''
+    # Message of calling to read the data.
+    # FIXME: Apply DataBase and ParameterManager
+    
+    _reading_db_para_pairs = ((NoiseDataBase, RefParameter), 
+                              (TransferfuncDataBase, RefParameter),
+                              (NoiseDataBase, VCOParameter),
+                              (TransferfuncDataBase, VCOParameter),
+                              (TransferfuncDataBase, OpenLoopParameter)
+                              )
+    
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+        self._make_dataname_dummydata_df()
+    
+    def _make_dataname_dummydata_df(self):
+        make_dummy = MakeDummyDataForDataBase()        
+        data_pairs =[]
+        
+        for DB, PRM in self._reading_db_para_pairs:
+            db = DB()
+            prm = PRM()
+            prm.set_type(db.index_val)
+            data_pairs.append([DB, PRM, prm.get_dataname(),
+                                                make_dummy.get_dummydata(DB)])
+        self._name_data_df=DataFrame(data_pairs, columns = 
+                                        ['DataBase', 'Parameter', 
+                                         'dataname','dummydata'])
+            
+    def _get_data_from_msg(self, msg):
+        print(msg)
+        # search index from message to reader.
+        matched_index = self._name_data_df.loc[:, 'dataname'].str.match(msg)
+        # Asked msg must be in _name_data_df.
+        self.assertTrue(matched_index.any())
+        return self._name_data_df.loc[matched_index, 'dummydata']
+            
+    def _input_side_effect_generator(self):
+        '''
+        Generate the side_effect function which return the value match input
+        message of reader.
+        _side_effect function must be defined in this method to use mock class.
+        Because _get_data_from_msg is class method and need instance "self". 
+        '''
+        def _side_effect(message):
+            '''
+            return the dummy data of self._inputdata. The data is chosen by 
+            message. message is transformed into parameter in self._msg_para.
+            '''
+            return self._get_data_from_msg(message)
+        return _side_effect
+    
+
+    def test_readdata(self):           
+        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
+            read_mock.side_effect =self._input_side_effect_generator()
+            
+            pndata = PNDataReader()
+            pndata.execute()
+            """
+            for prmtr in self._reading_list:
+                assert_frame_equal(self.pndb.get_noise(prmtr), 
+                                   self._inputdata[prmtr])
+            """
 
 
 @add_msg 

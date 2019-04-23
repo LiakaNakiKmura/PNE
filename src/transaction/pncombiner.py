@@ -392,16 +392,6 @@ class _PNDataIOCommon(Transaction):
         '''
         pass
 
-class PNDataReader2(_PNDataIOCommon):
-    _target = ['ref', 'vco', 'pd', 'open_loop_gain']
-    
-    def _set_io_setting(self):
-        self._io_setting = self.pnpm.read_setting
-    
-    def _do_io(self, parameter, message):
-        data = self.csvio.read(message)
-        self.pndb.set_noise(parameter, data)
-
 class PNDataReader(Transaction):
     # TODO: Replace PNDataReader
     _DataBase_Reader_pair = [[CSVIO, NoiseDataBase, RefParameter],

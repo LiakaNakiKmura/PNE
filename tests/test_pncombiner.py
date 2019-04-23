@@ -13,6 +13,7 @@ because import
 # Standard module
 import unittest
 from unittest.mock import patch
+import re
 import abc
 
 # 3rd party's module
@@ -456,10 +457,6 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
                       ]
     _Reader_mockpath_pairs={CSVIO:'src.dataio.csvio.CSVIO.read'}
     
-    '''
-    FIXME: AddTest InputData is comberted to DataFrame
-    '''
-    
     def setUp(self):
         super().setUp()
         self.dummydata_maker = MakeDummyDataForDataBase()
@@ -483,18 +480,15 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
         assert_frame_equal(db.get_data(paramng.name), dummydata) 
     
     def test_no_df_data_set(self):
-        _Reader = CSVIO, 
+        _Reader = CSVIO
         _DataBase = NoiseDataBase
         _ParamaterManager = RefParameter
         
-        db = _DataBase()
-        paramng = _ParamaterManager()
-        dummydata = [[1,10,100], [-20,-40,-60]]
-        
+        dummydata = [[1,10,100], [-20,-40,-60]]        
         data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
-        self._test_datasetter_exe(self._Reader_mockpath_pairs[_Reader],
-                                  dummydata, data_setter)
-        assert_frame_equal(db.get_data(paramng.name), dummydata) 
+        with patch(self._Reader_mockpath_pairs[_Reader]) as read_mock:
+            read_mock.return_value = dummydata
+            self.assertRaises(TypeError, data_setter.execute)
 
     def test_diff_test_name(self):
         # Test call pattern is different when data base is changed to the same
@@ -674,66 +668,6 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
     '''
     # Message of calling to read the data.
     
-    def setUp(self):
-        UsingPNDataBase.setUp(self)
-        self._set_ask_word()
-        self._make_dummy_inputs()
-    
-    def _set_ask_word(self):
-        pn = Parameter_Names()
-        self._reading_message_dict = pn.get_read_msg_dict()  
-        self._reading_list = pn.get_reading_list()
-        # Message of calling to read the data.
-
-    def _make_dummy_inputs(self):
-        '''
-        Make dummy data which match the message of reader is passed.
-        '''
-        self._msg_para = dict((v,k) for k,v in 
-                              self._reading_message_dict.items())
-        self._inputdata = {}
-        for i, parameter in enumerate(self._reading_list):
-            self._inputdata[parameter] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
-
-            
-    def _input_side_effect_generator(self):
-        """
-        Generate the side_effect function which return the value match input
-        message of reader.
-        """
-        
-        
-        def _side_effect(message):
-            '''
-            return the dummy data of self._inputdata. The data is chosen by 
-            message. message is transformed into parameter in self._msg_para.
-            '''
-            return self._inputdata[self._msg_para[message]]
-        
-        
-        return _side_effect
-    
-
-    def _test_readdata(self):           
-        with patch('src.dataio.csvio.CSVIO.read') as read_mock:
-            read_mock.side_effect =self._input_side_effect_generator()
-            
-            pndata = PNDataReader()
-            pndata.execute()
-            
-            for prmtr in self._reading_list:
-                assert_frame_equal(self.pndb.get_noise(prmtr), 
-                                   self._inputdata[prmtr])
-
-@add_msg
-class TestCombineRead2(UsingPNDataBase, unittest.TestCase):
-    '''
-    This is the test for reading data of transfer function, phasenoise dadta,
-    noise data.
-    '''
-    # Message of calling to read the data.
-    # FIXME: Apply DataBase and ParameterManager
-    
     _reading_db_para_pairs = ((NoiseDataBase, RefParameter), 
                               (TransferfuncDataBase, RefParameter),
                               (NoiseDataBase, VCOParameter),
@@ -744,29 +678,34 @@ class TestCombineRead2(UsingPNDataBase, unittest.TestCase):
     def setUp(self):
         UsingPNDataBase.setUp(self)
         self._make_dataname_dummydata_df()
-    
+
     def _make_dataname_dummydata_df(self):
         make_dummy = MakeDummyDataForDataBase()        
-        data_pairs =[]
+        #data_pairs =[]
+        datanames = []
+        self._dummydata ={}
         
         for DB, PRM in self._reading_db_para_pairs:
             db = DB()
             prm = PRM()
             prm.set_type(db.index_val)
-            data_pairs.append([DB, PRM, prm.get_dataname(),
-                                                make_dummy.get_dummydata(DB)])
-        self._name_data_df=DataFrame(data_pairs, columns = 
-                                        ['DataBase', 'Parameter', 
-                                         'dataname','dummydata'])
+            name = prm.get_dataname()
+            datanames.append([DB, PRM, name])
+            self._dummydata[name] = make_dummy.get_dummydata(DB)
+            
+        self._datanames = DataFrame(datanames, columns = ['DataBase', 
+                                                          'Parameter', 
+                                                          'dataname'])
             
     def _get_data_from_msg(self, msg):
-        print(msg)
-        # search index from message to reader.
-        matched_index = self._name_data_df.loc[:, 'dataname'].str.match(msg)
-        # Asked msg must be in _name_data_df.
-        self.assertTrue(matched_index.any())
-        return self._name_data_df.loc[matched_index, 'dummydata']
+        # If dataname is in msg, return matched dummydata.
+        for dataname in self._dummydata.keys():
+            if re.match(dataname, msg):
+                return self._dummydata[dataname]
             
+        # if dataname is not find in message, raise error
+        raise ValueError('{} is invalid message'.format(msg))
+    
     def _input_side_effect_generator(self):
         '''
         Generate the side_effect function which return the value match input
@@ -789,12 +728,11 @@ class TestCombineRead2(UsingPNDataBase, unittest.TestCase):
             
             pndata = PNDataReader()
             pndata.execute()
-            """
-            for prmtr in self._reading_list:
-                assert_frame_equal(self.pndb.get_noise(prmtr), 
-                                   self._inputdata[prmtr])
-            """
-
+            for data in self._datanames.get_values():
+                db = data[0]()
+                prm = data[1]()
+                assert_frame_equal(db.get_data(prm.name), 
+                                   self._dummydata[data[2]])
 
 @add_msg 
 class TestCombineWrite(UsingPNDataBase,unittest.TestCase):  

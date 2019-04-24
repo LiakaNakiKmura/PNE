@@ -354,45 +354,6 @@ class DataSetter(Transaction):
             '{} must be subclass of Reader'.format(parent)
 #TODO: Make DataWriter.
 
-class _PNDataIOCommon(Transaction):
-    '''
-    This is the base class to read or write data that is listed in '_target'
-    from or to output.
-    '''
-    _target = []
-    
-    def __init__(self):
-        self.csvio = CSVIO()
-        self.pndb = PNDataBase()
-        self.pnpm = PNPrmtrMng()
-        self._set_io_setting()
-
-    def execute(self):
-        for name in self._target:
-            parameter, message = self._get_parameter_msg(name)
-            self._do_io(parameter, message)
-    
-    @abc.abstractmethod
-    def _set_io_setting(self):
-        '''
-        Subclass needs to overwrite this method to set the _io_setting as
-        reding or writing defined in PNPrmtrMng. This setting will be used for
-        choosing the message reading or writing.
-        '''
-        self._io_setting = None
-    
-    def _get_parameter_msg(self, name):
-        parameter = getattr(self.pnpm, name)
-        message = self.pnpm.get_message(self._io_setting, parameter)
-        return (parameter, message)
-    
-    @abc.abstractmethod
-    def _do_io(self, parameter, message):
-        '''
-        Subclass is needed to overwrite to set the reading or writing.
-        '''
-        pass
-
 class PNDataReader(Transaction):
     _DataBase_Reader_pair = [[CSVIO, NoiseDataBase, RefParameter],
                              [CSVIO, TransferfuncDataBase, RefParameter],
@@ -413,34 +374,19 @@ class PNDataReader(Transaction):
         for pair in self._DataBase_Reader_pair:
             self.datasetters.append(DataSetter(*pair))
 
-
-class PNDataWriter(_PNDataIOCommon):
-    # TODO: Replace pndatawriter to use DataWriter
-    _target=['total']
-    
-    def _set_io_setting(self):
-        self._io_setting = self.pnpm.write_setting
-    
-    def _do_io(self, parameter, message):
-        data = self.pndb.get_closeloop_noise(parameter)     
-        self.csvio.write(message, data)
-
-class PNDataWriter2(Transaction):
+class PNDataWriter(Transaction):
     _DataBase_Writer_pair = [[CSVIO, CloseLoopDataBase, TotalOutParameter]
                              ]
-    
-    def __init__(self):
-        pass
+    # TODO: Make DataWriter class 
     
     def execute(self):
         for pairs in self._DataBase_Writer_pair:
-            self.write_data(*pairs)
+            self._write_data(*pairs)
     
-    def write_data(self, WriterClass, DataBaseClass, ParameterManagerClass):
+    def _write_data(self, WriterClass, DataBaseClass, ParameterManagerClass):
         db = DataBaseClass()
         pm = ParameterManagerClass()
         pm.set_type(db.index_val)
         data = db.get_data(pm.get_dataname())
         writer = WriterClass()
         writer.write(pm.get_dataname(), data)
-                    

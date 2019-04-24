@@ -29,7 +29,6 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
-                                        PNDataWriter2,
                                         PNCalc, PNDataBase, PNPrmtrMng,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
@@ -743,67 +742,19 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
                 assert_frame_equal(db.get_data(prm.name), 
                                    self._dummydata[data[2]])
 
+
 @add_msg 
 class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):  
-    """
-    This is the test for reading data of transfer function, phasenoise dadta,
-    noise data.
-    """
-    # Message of calling to read the data.
-
-    def setUp(self):
-        UsingPNDataBase.setUp(self)
-        self._set_ask_word()
-        self._make_dummy_inputs()
-       
-    def _set_ask_word(self):
-        pn = Parameter_Names()
-        self._writing_message_dict = pn.get_write_msg_dict()  
-        self._writing_list = pn.get_writing_list()
-        # Message of calling to read the data.
-
-    def _make_dummy_inputs(self):
-        '''
-        Make dummy data which match the message of reader is passed.
-        '''
-        self._inputdata = {}
-        for i, parameter in enumerate(self._writing_list):
-            self._inputdata[parameter] = DataFrame([[4*1,4*i+1],[4*i+2,4*i+3]])
-
-    def test_savedata(self):      
-        '''
-        Test data is saved correctry.
-        '''
-        with patch('src.dataio.csvio.CSVIO.write') as write_mock:
-            
-            for parameter, dummydata in self._inputdata.items():
-                self.pndb.set_closeloop_noise(parameter, dummydata)
-            
-            pndatawriter = PNDataWriter()
-            pndatawriter.execute()
-            self.assertTrue(len(write_mock.call_args_list) > 0)
-            # If not called raise error.
-            
-            for call, key, data in zip(write_mock.call_args_list,
-                                       self._inputdata.keys(),
-                                       self._inputdata.values()):
-                args, kwargs =call
-                self.assertTrue(args[0]==self._writing_message_dict[key])
-                assert_frame_equal(args[1],data)
-
-@add_msg 
-class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):  
-    """
-    This is the test for reading data of transfer function, phasenoise dadta,
-    noise data.
-    """
-    # Message of calling to read the data.
+    '''
+    This is the test for writing data from data base to writer.
+    '''
     # TODO: Use Parametermanager for test.
+    
     _writing_db_para_pairs = ((CloseLoopDataBase, TotalOutParameter),)
     # Pairs of writing database and parameter manager.
     
     _writer_mock_path = 'src.dataio.csvio.CSVIO.write'
-    # path for writer.
+    # path for writer to replace to mock..
     
     _msg_arg_order = 0
     # message is set in 1st argument for writer.
@@ -824,6 +775,7 @@ class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):
             prm.set_type(db.index_val)
             name = prm.get_dataname()
             dummydata = make_dummy.get_dummydata(DB)
+            
             db.set_data(name, dummydata)
             self._dummydata[name] = dummydata
             
@@ -845,7 +797,7 @@ class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):
         Test data is saved correctry.
         '''
         with patch(self._writer_mock_path) as write_mock:            
-            pndatawriter = PNDataWriter2()
+            pndatawriter = PNDataWriter()
             pndatawriter.execute()
             self.assertTrue(len(write_mock.call_args_list) > 0)
             # If not called raise error.

@@ -28,7 +28,8 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 
 # Target class
-from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter, 
+from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
+                                        PNDataWriter2,
                                         PNCalc, PNDataBase, PNPrmtrMng,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
@@ -299,7 +300,8 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
 
     def test_get_names(self):
         '''
-        DataBase returns names of resitored data
+        DataBase returns set of names of resitored data.
+        return value is list
         '''
         number_of_data = 30
         namelist = [chr(65 +i) for i in range(number_of_data)]
@@ -313,6 +315,7 @@ class IndivDataBaseSetGetChk(UsingPNDataBase):
             test_database.set_data(name, self._make_rand_dummy_data())
         
         self.assertCountEqual(namelist,  test_database.get_names())
+        self.assertEqual(type(test_database.get_names()), list)
 
 @add_msg  
 class TestNoiseDataBase(IndivDataBaseSetGetChk, unittest.TestCase):
@@ -812,8 +815,7 @@ class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):
         self._make_dataname_dummydata_df()
         
     def _make_dataname_dummydata_df(self):
-        make_dummy = MakeDummyDataForDataBase()       
-        datanames = []
+        make_dummy = MakeDummyDataForDataBase()  
         self._dummydata ={}
         
         for DB, PRM in self._writing_db_para_pairs:
@@ -821,9 +823,9 @@ class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):
             prm = PRM()
             prm.set_type(db.index_val)
             name = prm.get_dataname()
-            datanames.append([DB, PRM, name])
-            db.set_data(name, make_dummy.get_dummydata(DB))
-            self._dummydata[name] = make_dummy.get_dummydata(DB)
+            dummydata = make_dummy.get_dummydata(DB)
+            db.set_data(name, dummydata)
+            self._dummydata[name] = dummydata
             
     def _get_data_from_msg(self, msg):
         # If dataname is in msg, return matched dummydata.
@@ -838,12 +840,12 @@ class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):
         # Args is first data of each call list.
         return [a_call[0] for a_call in call_arg_list]
 
-    def _test_savedata(self):      
+    def test_savedata(self):      
         '''
         Test data is saved correctry.
         '''
         with patch(self._writer_mock_path) as write_mock:            
-            pndatawriter = PNDataWriter()
+            pndatawriter = PNDataWriter2()
             pndatawriter.execute()
             self.assertTrue(len(write_mock.call_args_list) > 0)
             # If not called raise error.

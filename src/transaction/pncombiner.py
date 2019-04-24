@@ -189,7 +189,7 @@ class IndivDataBase(metaclass = abc.ABCMeta):
         return self._setter(new_name, new_data)
     
     def get_names(self):
-        return self._get_name()
+        return list(self._get_name())
     
     
     def _vlogf_interpolation(self, data, freq_new):        
@@ -269,7 +269,7 @@ class NoiseTransfuncPairsManager():
     def get_pair_names(self):
         noise_names = self.ndb.get_names()
         tf_names = self.tfdb.get_names()
-        return list(noise_names & tf_names)
+        return list(set(noise_names) & set(tf_names))
 
 @read_only_getter_decorator({'name':'parameter name'})
 #name must be overwrite in inhirated class.
@@ -315,6 +315,10 @@ class RefParameter(ParameterManager):
 class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
+@read_only_getter_decorator({'name':'Total Out'})
+class TotalOutParameter(ParameterManager):
+    _acceptable_databases = [CloseLoopDataBase]
+
 class DataSetter(Transaction):
     '''
     DataSetter set data of ParameterManager from Reder to Database.
@@ -323,10 +327,6 @@ class DataSetter(Transaction):
     ParameterManagerClass: subclass of ParameterManager
     
     Combination of command pattern, Factory pattern, Staratagy pattern.
-    '''
-    
-    '''
-    FIXME: InputData is comberted to DataFrame
     '''
     
     def __init__(self, ReaderClass, DatBaseClass,  ParameterManagerClass):
@@ -352,6 +352,7 @@ class DataSetter(Transaction):
             parent = inheritance_pair[Class]
             assert issubclass(Class, parent),\
             '{} must be subclass of Reader'.format(parent)
+#TODO: Make DataWriter.
 
 class _PNDataIOCommon(Transaction):
     '''
@@ -393,7 +394,6 @@ class _PNDataIOCommon(Transaction):
         pass
 
 class PNDataReader(Transaction):
-    # TODO: Replace PNDataReader
     _DataBase_Reader_pair = [[CSVIO, NoiseDataBase, RefParameter],
                              [CSVIO, TransferfuncDataBase, RefParameter],
                              [CSVIO, NoiseDataBase, VCOParameter],
@@ -415,6 +415,7 @@ class PNDataReader(Transaction):
 
 
 class PNDataWriter(_PNDataIOCommon):
+    # TODO: Replace pndatawriter to use DataWriter
     _target=['total']
     
     def _set_io_setting(self):
@@ -423,3 +424,23 @@ class PNDataWriter(_PNDataIOCommon):
     def _do_io(self, parameter, message):
         data = self.pndb.get_closeloop_noise(parameter)     
         self.csvio.write(message, data)
+
+class PNDataWriter2(Transaction):
+    _DataBase_Writer_pair = [[CSVIO, CloseLoopDataBase, TotalOutParameter]
+                             ]
+    
+    def __init__(self):
+        pass
+    
+    def execute(self):
+        for pairs in self._DataBase_Writer_pair:
+            self.write_data(*pairs)
+    
+    def write_data(self, WriterClass, DataBaseClass, ParameterManagerClass):
+        db = DataBaseClass()
+        pm = ParameterManagerClass()
+        pm.set_type(db.index_val)
+        data = db.get_data(pm.get_dataname())
+        writer = WriterClass()
+        writer.write(pm.get_dataname(), data)
+                    

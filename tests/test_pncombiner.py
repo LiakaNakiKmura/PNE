@@ -36,6 +36,7 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         NoiseTransfuncPairsManager,
                                         ParameterManager, RefParameter,
                                         VCOParameter, OpenLoopParameter,
+                                        TotalOutParameter,
                                         DataSetter)
 
 # utlities.
@@ -88,8 +89,7 @@ class TestFuncExists(TestForMethodExist, unittest.TestCase):
     _class_attr_pairs = ((IndivDataBase, 'index_freq'),
                          (IndivDataBase, 'index_val')
                          )
-
-
+    
 @add_msg
 class TestCombinePN(unittest.TestCase):
     """
@@ -374,7 +374,8 @@ class TestParameterManagerTotal(UsingPNDataBase,unittest.TestCase):
         """
         name must be indivisual in each other for parameter manager.
         """
-        _parameter_list=[OpenLoopParameter, RefParameter, VCOParameter]
+        _parameter_list=[OpenLoopParameter, RefParameter, VCOParameter,
+                         TotalOutParameter]
         # TODO: Is needed to be parameter list to pncombiner.
         names = [p.name for p in _parameter_list]
         self.assertEqual(len(names), len(set(names)))
@@ -392,6 +393,7 @@ class TestParameterManager(UsingPNDataBase):
     #common parameter
     _total_database_list = [NoiseDataBase, TransferfuncDataBase,
                             CloseLoopDataBase]
+    # FIXME: Change names if PLL name is different.
     
     def setUp(self):
         super().setUp()
@@ -446,6 +448,11 @@ class TestRefParameter(TestParameterManager, unittest.TestCase):
 class TestVCOParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = VCOParameter
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
+
+@add_msg
+class TestTotalOutParameter(TestParameterManager, unittest.TestCase):
+    _ClassForTest = TotalOutParameter
+    _acceptable_databases = [CloseLoopDataBase]
 
 @add_msg
 class TestDataSetter(UsingPNDataBase, unittest.TestCase):
@@ -680,8 +687,7 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
         self._make_dataname_dummydata_df()
 
     def _make_dataname_dummydata_df(self):
-        make_dummy = MakeDummyDataForDataBase()        
-        #data_pairs =[]
+        make_dummy = MakeDummyDataForDataBase()
         datanames = []
         self._dummydata ={}
         
@@ -735,7 +741,7 @@ class TestCombineRead(UsingPNDataBase, unittest.TestCase):
                                    self._dummydata[data[2]])
 
 @add_msg 
-class TestCombineWrite(UsingPNDataBase,unittest.TestCase):  
+class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):  
     """
     This is the test for reading data of transfer function, phasenoise dadta,
     noise data.
@@ -781,6 +787,72 @@ class TestCombineWrite(UsingPNDataBase,unittest.TestCase):
                 args, kwargs =call
                 self.assertTrue(args[0]==self._writing_message_dict[key])
                 assert_frame_equal(args[1],data)
+
+@add_msg 
+class TestPNDataWriter2(UsingPNDataBase,unittest.TestCase):  
+    """
+    This is the test for reading data of transfer function, phasenoise dadta,
+    noise data.
+    """
+    # Message of calling to read the data.
+    # TODO: Use Parametermanager for test.
+    _writing_db_para_pairs = ((CloseLoopDataBase, TotalOutParameter),)
+    # Pairs of writing database and parameter manager.
+    
+    _writer_mock_path = 'src.dataio.csvio.CSVIO.write'
+    # path for writer.
+    
+    _msg_arg_order = 0
+    # message is set in 1st argument for writer.
+    _data_arg_order = 1
+    # data is set in 2nd argument for writer.
+
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+        self._make_dataname_dummydata_df()
+        
+    def _make_dataname_dummydata_df(self):
+        make_dummy = MakeDummyDataForDataBase()       
+        datanames = []
+        self._dummydata ={}
+        
+        for DB, PRM in self._writing_db_para_pairs:
+            db = DB()
+            prm = PRM()
+            prm.set_type(db.index_val)
+            name = prm.get_dataname()
+            datanames.append([DB, PRM, name])
+            db.set_data(name, make_dummy.get_dummydata(DB))
+            self._dummydata[name] = make_dummy.get_dummydata(DB)
+            
+    def _get_data_from_msg(self, msg):
+        # If dataname is in msg, return matched dummydata.
+        for dataname in self._dummydata.keys():
+            if re.match(dataname, msg):
+                return self._dummydata[dataname]
+            
+        # if dataname is not find in message, raise error
+        raise ValueError('{} is invalid message'.format(msg))
+    
+    def _get_argslist(self, call_arg_list):
+        # Args is first data of each call list.
+        return [a_call[0] for a_call in call_arg_list]
+
+    def _test_savedata(self):      
+        '''
+        Test data is saved correctry.
+        '''
+        with patch(self._writer_mock_path) as write_mock:            
+            pndatawriter = PNDataWriter()
+            pndatawriter.execute()
+            self.assertTrue(len(write_mock.call_args_list) > 0)
+            # If not called raise error.
+            
+            for args in self._get_argslist(write_mock.call_args_list):
+                # First argument is 
+                set_data = self._get_data_from_msg(args[self._msg_arg_order])
+                write_data = args[self._data_arg_order]
+                assert_frame_equal(set_data, write_data)
 
 @add_msg 
 class TestCombiningData(UsingPNDataBase,unittest.TestCase):

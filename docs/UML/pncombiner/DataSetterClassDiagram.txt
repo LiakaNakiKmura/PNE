@@ -15,7 +15,7 @@ abstract class Reader{
 }
 
 
-class DataSetter{
+class DataReader{
     +__init__(Reader, IndivDataBase, ParameterManager)
 }
 
@@ -32,8 +32,8 @@ TransferfuncDataBase -up-|> IndivDataBase
 CloseLoopDataBase -up-|> IndivDataBase
 
 
-DataSetter -do-> ParameterManager
-DataSetter -do-> IndivDataBase
-DataSetter -do-> Reader
+DataReader -do-> ParameterManager
+DataReader -do-> IndivDataBase
+DataReader -do-> Reader
 
 @enduml

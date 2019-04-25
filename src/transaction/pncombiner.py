@@ -319,9 +319,9 @@ class VCOParameter(ParameterManager):
 class TotalOutParameter(ParameterManager):
     _acceptable_databases = [CloseLoopDataBase]
 
-class DataSetter(Transaction):
+class DataReader(Transaction):
     '''
-    DataSetter set data of ParameterManager from Reder to Database.
+    DataReader set data of ParameterManager from Reder to Database.
     ReaderClass: subclass of Reader
     DataBaseClass: subclass of IndivDataBase
     ParameterManagerClass: subclass of ParameterManager
@@ -363,16 +363,16 @@ class PNDataReader(Transaction):
                              ]
     
     def __init__(self):
-        self._set_datasetter()
+        self._set_datareader()
     
     def execute(self):
-        for datasetter in self.datasetters:
-            datasetter.execute()
+        for datareader in self.datareaders:
+            datareader.execute()
     
-    def _set_datasetter(self):
-        self.datasetters = []
+    def _set_datareader(self):
+        self.datareaders = []
         for pair in self._DataBase_Reader_pair:
-            self.datasetters.append(DataSetter(*pair))
+            self.datareaders.append(DataReader(*pair))
 
 class PNDataWriter(Transaction):
     _DataBase_Writer_pair = [[CSVIO, CloseLoopDataBase, TotalOutParameter]

@@ -37,7 +37,7 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         ParameterManager, RefParameter,
                                         VCOParameter, OpenLoopParameter,
                                         TotalOutParameter,
-                                        DataSetter)
+                                        DataReader)
 
 # utlities.
 from context import src # path setting
@@ -77,7 +77,7 @@ class TestCombinePNInterfaces(Inheration_test_base,unittest.TestCase):
                                (NoiseDataBase, IndivDataBase),
                                (TransferfuncDataBase, IndivDataBase),
                                (CloseLoopDataBase, IndivDataBase),
-                               (DataSetter, Transaction)
+                               (DataReader, Transaction)
                                )
 
 @add_msg
@@ -457,7 +457,7 @@ class TestTotalOutParameter(TestParameterManager, unittest.TestCase):
     _acceptable_databases = [CloseLoopDataBase]
 
 @add_msg
-class TestDataSetter(UsingPNDataBase, unittest.TestCase):
+class TestDataReader(UsingPNDataBase, unittest.TestCase):
     _DataBase  = None
     _set_class_pairs=[[CSVIO, NoiseDataBase, RefParameter], 
                       [CSVIO, TransferfuncDataBase, VCOParameter], 
@@ -475,7 +475,7 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
             self._test_each_data(*pair)
     
     def _test_each_data(self, _Reader, _DataBase, _ParamaterManager):
-        # test DataSetter read data from _Reader with Parameter Manager name.
+        # test DataReader read data from _Reader with Parameter Manager name.
         # set to Reader.
         
         # Make instances
@@ -483,18 +483,25 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
         paramng = _ParamaterManager()
         dummydata = self.dummydata_maker.get_dummydata(_DataBase)
         
-        data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
-        self._test_datasetter_exe(self._Reader_mockpath_pairs[_Reader],
+        data_setter = DataReader(_Reader, _DataBase, _ParamaterManager)
+        self._test_DataReader_exe(self._Reader_mockpath_pairs[_Reader],
                                   dummydata, data_setter)
         assert_frame_equal(db.get_data(paramng.name), dummydata) 
     
-    def test_no_df_data_set(self):
+    def _test_DataReader_exe(self, mock_path, dummydata, data_setter):
+        with patch(mock_path) as read_mock:
+            read_mock.return_value = dummydata
+            data_setter.execute()              
+            return read_mock
+    
+    def test_none_df_data_set(self):
+        # If none df data is set, raise error.
         _Reader = CSVIO
         _DataBase = NoiseDataBase
         _ParamaterManager = RefParameter
         
         dummydata = [[1,10,100], [-20,-40,-60]]        
-        data_setter = DataSetter(_Reader, _DataBase, _ParamaterManager)
+        data_setter = DataReader(_Reader, _DataBase, _ParamaterManager)
         with patch(self._Reader_mockpath_pairs[_Reader]) as read_mock:
             read_mock.return_value = dummydata
             self.assertRaises(TypeError, data_setter.execute)
@@ -508,8 +515,8 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
         calls = []
 
         for DB in _DataBases:
-            data_setter = DataSetter(CSVIO, DB, RefParameter)            
-            read_mock = self._test_datasetter_exe(mock_path, dummydata, 
+            data_setter = DataReader(CSVIO, DB, RefParameter)            
+            read_mock = self._test_DataReader_exe(mock_path, dummydata, 
                                                   data_setter)
             calls.append(list(read_mock.call_args))
         
@@ -518,12 +525,45 @@ class TestDataSetter(UsingPNDataBase, unittest.TestCase):
             # different data name is called.
             # data name is first argument.
             self.assertNotEqual(first_call[0], call[0])
+
+@add_msg
+class TestDataWriter(UsingPNDataBase, unittest.TestCase):
+    _DataBase  = None
+    _set_class_pairs=[[CSVIO, NoiseDataBase, RefParameter], 
+                      [CSVIO, TransferfuncDataBase, VCOParameter], 
+                      [CSVIO, NoiseDataBase, VCOParameter],
+                      [CSVIO, TransferfuncDataBase, OpenLoopParameter]
+                      ]
+    _Reader_mockpath_pairs={CSVIO:'src.dataio.csvio.CSVIO.read'}
     
-    def _test_datasetter_exe(self, mock_path, dummydata, data_setter):
+    def setUp(self):
+        super().setUp()
+        self.dummydata_maker = MakeDummyDataForDataBase()
+    """
+    def test_data_setter(self):
+        for pair in self._set_class_pairs:
+            self._test_each_data(*pair)
+    
+    def _test_each_data(self, _Reader, _DataBase, _ParamaterManager):
+        # test DataReader read data from _Reader with Parameter Manager name.
+        # set to Reader.
+        
+        # Make instances
+        db = _DataBase()
+        paramng = _ParamaterManager()
+        dummydata = self.dummydata_maker.get_dummydata(_DataBase)
+        
+        data_setter = DataReader(_Reader, _DataBase, _ParamaterManager)
+        self._test_DataReader_exe(self._Reader_mockpath_pairs[_Reader],
+                                  dummydata, data_setter)
+        assert_frame_equal(db.get_data(paramng.name), dummydata) 
+    
+    def _test_DataReader_exe(self, mock_path, dummydata, data_setter):
         with patch(mock_path) as read_mock:
             read_mock.return_value = dummydata
             data_setter.execute()              
             return read_mock
+    """
 
 
 @add_msg
@@ -748,7 +788,6 @@ class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):
     '''
     This is the test for writing data from data base to writer.
     '''
-    # TODO: Use Parametermanager for test.
     
     _writing_db_para_pairs = ((CloseLoopDataBase, TotalOutParameter),)
     # Pairs of writing database and parameter manager.

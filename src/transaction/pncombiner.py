@@ -352,7 +352,18 @@ class DataReader(Transaction):
             parent = inheritance_pair[Class]
             assert issubclass(Class, parent),\
             '{} must be subclass of Reader'.format(parent)
+            
 #TODO: Make DataWriter.
+class DataWriter(Transaction):
+    def __init__(self, WriterClass, DatBaseClass,  ParameterManagerClass):
+        self._writer = WriterClass()
+        self._database = DatBaseClass()
+        self._pr_mng = ParameterManagerClass()
+        self._pr_mng.set_type(self._database.index_val)
+    
+    def execute(self):
+        data = self._database.get_data(self._pr_mng.name)
+        self._writer.write(self._pr_mng.get_dataname(), data)
 
 class PNDataReader(Transaction):
     _DataBase_Reader_pair = [[CSVIO, NoiseDataBase, RefParameter],

@@ -836,11 +836,11 @@ class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):
             db = DB()
             prm = PRM()
             prm.set_type(db.index_val)
-            name = prm.get_dataname()
+            name = prm.name
             dummydata = make_dummy.get_dummydata(DB)
             
             db.set_data(name, dummydata)
-            self._dummydata[name] = dummydata
+            self._dummydata[prm.get_dataname()] = dummydata
             
     def _get_data_from_msg(self, msg):
         # If dataname is in msg, return matched dummydata.

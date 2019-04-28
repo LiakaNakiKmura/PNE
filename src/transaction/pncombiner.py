@@ -388,16 +388,11 @@ class PNDataReader(Transaction):
 class PNDataWriter(Transaction):
     _DataBase_Writer_pair = [[CSVIO, CloseLoopDataBase, TotalOutParameter]
                              ]
-    # TODO: Make DataWriter class 
+    # Fixme: refactoring to use DataWriter.
+    def __init__(self):
+        pass
     
     def execute(self):
         for pairs in self._DataBase_Writer_pair:
-            self._write_data(*pairs)
-    
-    def _write_data(self, WriterClass, DataBaseClass, ParameterManagerClass):
-        db = DataBaseClass()
-        pm = ParameterManagerClass()
-        pm.set_type(db.index_val)
-        data = db.get_data(pm.get_dataname())
-        writer = WriterClass()
-        writer.write(pm.get_dataname(), data)
+            self._datawriter = DataWriter(*pairs)
+            self._datawriter.execute()

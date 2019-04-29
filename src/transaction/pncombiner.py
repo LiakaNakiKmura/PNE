@@ -34,7 +34,6 @@ class PNCombiner(Transaction):
     def execute(self):
         pass
 
-
 class PNCalc(Transaction):
     def __init__(self):
         self._ndb = NoiseDataBase()
@@ -49,7 +48,7 @@ class PNCalc(Transaction):
     
     def _get_data(self):
         self._noise_names = self._ndb.get_names()
-        self._noises = self._get_datalist(self._ndb)
+        self._noises = self._get_datalist(self._ndb)        
         self._tfs = self._get_datalist(self._tfdb)
         self._opnlp = self._tfdb.get_data(self.pnpm.open_loop_gain)
     
@@ -77,7 +76,50 @@ class PNCalc(Transaction):
         total_pn = pd.concat([self._opnlp[self._tfdb.index_freq], total_pn_val],
                               axis = 1)
         self._cldb.set_data(self.pnpm.total, total_pn)
+       
+class PNCalc2(Transaction):
+    #FIXME: Use Parameter Manager
+    def __init__(self):
+        self._ndb = NoiseDataBase()
+        self._tfdb = TransferfuncDataBase()
+        self._cldb = CloseLoopDataBase()
+        self.mlu = MagLogUtil()
+        self.pnpm = PNPrmtrMng()
         
+    def execute(self):
+        self._get_data()
+        self._do_calc()
+    
+    def _get_data(self):
+        self._noise_names = self._ndb.get_names()
+        self._noises = self._get_datalist(self._ndb)        
+        self._tfs = self._get_datalist(self._tfdb)
+        self._opnlp = self._tfdb.get_data(self.pnpm.open_loop_gain)
+    
+    def _get_datalist(self, database):
+        return {name: database.get_data(name) for name in self._noise_names}
+    
+    def _do_calc(self):
+        '''
+        Output noise = Transfer func from 
+        '''
+        self._closelp =1/(1+self._opnlp[self._tfdb.index_val])
+        self._closed_pn = {}
+        for name in self._noise_names:
+            
+            filter_compression_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
+            filter_compression_log = self.mlu.mag2log(abs(filter_compression_mag),20)
+            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
+            + filter_compression_log
+        
+        total_pn_val = np.array([-1e10 for _ in range(len(self._closelp))])
+        for pn in self._closed_pn.values():
+            add_pn =  self.mlu.log2mag(pn, N = 10)
+            tota_pn_buf = self.mlu.log2mag(total_pn_val, 10)
+            total_pn_val = self.mlu.mag2log(add_pn+tota_pn_buf, N = 10)
+        total_pn = pd.concat([self._opnlp[self._tfdb.index_freq], total_pn_val],
+                              axis = 1)
+        self._cldb.set_data(self.pnpm.total, total_pn)
 
 @singleton_decorator
 class PNDataBase():
@@ -124,6 +166,7 @@ class PNDataBase():
 @read_only_getter_decorator({'noise':'Noise', 'tf':'TransferFunction', 
                              'combpn':'Combined Phase Noise'})
 class PNPrmtrMng():
+    # FIXME: Refactoring to delete this class 
     _reading_param_message_pairs = {
             'ref':'Please input reference phase noise.', 
             'vco':'Please input VCO phase noise.',
@@ -137,24 +180,7 @@ class PNPrmtrMng():
     
     read_setting = 'r'
     write_setting = 'w'
-    
-    def __init__(self):
-        self._make_message_dict()
 
-    def get_message(self, usage, parameter_name):
-        return self._message_dict[usage][parameter_name]
-
-    def _make_message_dict(self):
-        # Make dictironaly of {usage:{parameter str: message}}.
-        self._message_dict = {}
-        usage_name_msg_pairs =\
-        {self.read_setting: self._reading_param_message_pairs,
-         self.write_setting: self._writing_param_message_pairs
-         }
-
-        for usage, msg_pairs in usage_name_msg_pairs.items():
-            self._message_dict[usage]=\
-            {getattr(self, name): msg for name, msg in msg_pairs.items()}
 
 class IndivDataBase(metaclass = abc.ABCMeta):
     '''
@@ -302,7 +328,8 @@ class ParameterManager(metaclass = abc.ABCMeta):
         self._data_type = self._acceptable_databases[0]().index_val
         # init data_type is first database in self._acceptable_databases.
 
-@read_only_getter_decorator({'name':'open loop'})
+@read_only_getter_decorator({'name':'open_loop_gain'})
+# FIXME: fix parameter name.
 class OpenLoopParameter(ParameterManager):
     #_message = 'open loop of PLL'
     _acceptable_databases = [TransferfuncDataBase]
@@ -352,8 +379,7 @@ class DataReader(Transaction):
             parent = inheritance_pair[Class]
             assert issubclass(Class, parent),\
             '{} must be subclass of Reader'.format(parent)
-            
-#TODO: Make DataWriter.
+
 class DataWriter(Transaction):
     def __init__(self, WriterClass, DatBaseClass,  ParameterManagerClass):
         self._writer = WriterClass()

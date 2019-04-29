@@ -865,116 +865,26 @@ class TestCombiningData(UsingPNDataBase,unittest.TestCase):
     def test_calc(self):
         self.pnc = PNCalc()
         self._dummydatamng.set_dummydata1()
-        collectdata = self._dummydatamng.set_data_and_get_value()
+        collectdata = self._dummydatamng.get_collect_data()
         
         self.pnc.execute()
         assert_array_almost_equal(collectdata, 
                                   self.pndb.get_closeloop_noise(self.pnpm.total))
         
-    
-class DummyTransfuncNoiseData2():
-    def __init__(self):
-        self.pnpm = PNPrmtrMng()
-    
-    def set_data_and_get_value(self):
-        return self.combined_noise
-    
-    def _set_dataset(self, freq, noise, tf, name):
-        self._set_dummy_to_db(NoiseDataBase, freq, noise, name)
-        self._set_dummy_to_db(TransferfuncDataBase, freq, tf, name)
-    
-    def _set_dummy_to_db(self, DataBase, freq_data, value_data, name):
-        db =DataBase()
-        dummy_data = pd.concat((freq_data, value_data), axis = 1)
-        dummy_data.columns = [db.index_freq, db.index_val]
-        db.set_data(name, dummy_data)    
-    
-    def set_dummydata1(self):
-        self._set_ref_1()
-        self._set_vco_1()
-        self._set_combined_1()
-        pass
-    
-    def _openloop1(self):
-        amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
-                        725.615560869816, 12.3726308452402, 1.00031528765996, 
-                        0.0588871802344158, 0.000723899599203854])
-        rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
-                                   -179.204812606648, -172.099601076092, 
-                                   -126.297374340824, -101.982202912406, 
-                                   -144.636561700446, -175.919922754962]))
-        return Series(amp*np.exp(1j*rad))
-
-    def _set_ref_1(self):
-        noise = Series([-60, -90, -120, -150, -174, -174, -174, -174])
-        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
-        MULT = 300
-        tf = self._openloop1()*MULT
-        self._set_dataset(freq, noise, tf, self.pnpm.ref)
-    
-    def _set_vco_1(self):
-        noise = Series([20, -10, -40, -70, -100, -120, -140, -160])
-        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
-        tf = Series(np.ones(len(noise))+0j)
-        self._set_dataset(freq, noise, tf, self.pnpm.vco)
-    
-    def _set_combined_1(self):
-        total_noise = Series([-10.4575748935194, -40.4575736967748, 
-                              -70.4574531198877, -100.436554942521, 
-                              -119.544591133846, -120.670402823308, 
-                              -139.069482677279, -159.985579375285])
-        freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
-        db = CloseLoopDataBase()
-        
-        self.combined_noise= pd.concat([freq, total_noise], axis = 1)
-        self.combined_noise.columns = [db.index_freq, db.index_val]
-        
-        self._set_dummy_to_db(TransferfuncDataBase, freq, self._openloop1(),
-                              self.pnpm.open_loop_gain)
-        
-        
 class DummyTransfuncNoiseData():
-    # FIXME: Use ParameterManager
-    def __init__(self):
-        self.pnpm = PNPrmtrMng()
-    
-    def set_data_and_get_value(self):
+    # Set dummy data for database.
+    # Make collect data for test.
+    def get_collect_data(self):
+        self._set_combined_noise()
         return self.combined_noise
     
-    def _set_dataset(self, freq, noise, tf, name):
-        self._set_dummy_to_db(NoiseDataBase, freq, noise, name)
-        self._set_dummy_to_db(TransferfuncDataBase, freq, tf, name)
-    
-    def _set_dummy_to_db(self, DataBase, freq_data, value_data, name):
-        db =DataBase()
-        dummy_data = pd.concat((freq_data, value_data), axis = 1)
-        dummy_data.columns = [db.index_freq, db.index_val]
-        db.set_data(name, dummy_data)    
-    
     def set_dummydata1(self):
-        self._set_vco_1()
-        self._set_combined_1()
-        self._set_ref_1()
-    
-    def _openloop1(self):
-        amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
-                        725.615560869816, 12.3726308452402, 1.00031528765996, 
-                        0.0588871802344158, 0.000723899599203854])
-        rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
-                                   -179.204812606648, -172.099601076092, 
-                                   -126.297374340824, -101.982202912406, 
-                                   -144.636561700446, -175.919922754962]))
-        return Series(amp*np.exp(1j*rad))
-    
-    def _set_ref_1(self):
-        setrefdata = SetRefData()
-        setrefdata.set_data(300)
-    
-    def _set_vco_1(self):
-        setvcodata = SetVCOData()
-        setvcodata.set_data()
-    
-    def _set_combined_1(self):
+        DataSetClasses = [SetOpenLoopData, SetRefData, SetVCOData]
+        for Class in DataSetClasses:
+            dataset = Class()
+            dataset.set_data()
+
+    def _set_combined_noise(self):
         total_noise = Series([-10.4575748935194, -40.4575736967748, 
                               -70.4574531198877, -100.436554942521, 
                               -119.544591133846, -120.670402823308, 
@@ -984,11 +894,14 @@ class DummyTransfuncNoiseData():
         
         self.combined_noise= pd.concat([freq, total_noise], axis = 1)
         self.combined_noise.columns = [db.index_freq, db.index_val]
-        
-        olp =  OpenLoopParameter()
-        self._set_dummy_to_db(TransferfuncDataBase, freq, self._openloop1(),
-                              olp.name)
+
+
 class SetPNCalcData():
+    '''
+    Set dummy data to database for combining test. 
+    Each parameter has inherated class.
+    Noise Data and Transfer function is set.
+    '''
     _ParameterManager = None
     _tf_name ='transferfunc'
     _noise_name = 'noise'
@@ -996,51 +909,48 @@ class SetPNCalcData():
     _freq = Series([])  
     
     def __init__(self):
-        self._make_instance()
-
-    def _make_instance(self):
         self._db = {self._noise_name:NoiseDataBase(), 
                     self._tf_name:TransferfuncDataBase()}
         self._prmtr =self._ParameterManager()
         
     def set_data(self):
-        self._make_data()
-        self._write_data()
-    
-    def _make_data(self):
-        self._input_data={}
+        self._inputs={}
         self._make_noise_data()
         self._make_tf_data()
+        self._write_data()
     
     def _make_noise_data(self):
-        self._input_data[self._noise_name] =\
-        DataFrame([self._freq, self._noise]).T
+        self._inputs[self._noise_name] = DataFrame([self._freq, self._noise]).T
     
     def _make_tf_data(self):
         pass
         
     def _write_data(self):
-        for name in self._input_data.keys():
-            self._db[name].set_data(self._prmtr.name, self._input_data[name])
+        for name in self._inputs.keys():
+            self._db[name].set_data(self._prmtr.name, self._inputs[name])
 
 
 class SetRefData(SetPNCalcData):
     _ParameterManager = RefParameter
     _noise = Series([-60, -90, -120, -150, -174, -174, -174, -174])
-    _freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])    
+    _freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000]) 
+    _MULT = 300
     
-    def _make_instance(self):
-        super()._make_instance()
-        self._total_parameter = OpenLoopParameter()    
-    
-    def set_data(self, mult):
-        self._mult = mult
-        super().set_data()
+    def __init__(self):
+        super().__init__()
+        self.prmtr = OpenLoopParameter()   
     
     def _make_tf_data(self):
-        open_loop_tf = self._db[self._tf_name].get_data(
-                self._total_parameter.name)
-        self._input_data[self._tf_name] =open_loop_tf*self._mult
+        if not self.prmtr.name in self._db[self._tf_name].get_names():
+            self._set_open_loop_data()
+            
+        open_loop_tf = self._db[self._tf_name].get_data(self.prmtr.name)
+        self._inputs[self._tf_name] =open_loop_tf*self._MULT
+    
+    def _set_open_loop_data(self):
+        solp = SetOpenLoopData()
+        solp.set_data()
+        
 
 class SetVCOData(SetPNCalcData):
     _ParameterManager = VCOParameter
@@ -1049,7 +959,26 @@ class SetVCOData(SetPNCalcData):
         
     def _make_tf_data(self):
         tf = Series(np.ones(len(self._noise))+0j)
-        self._input_data[self._tf_name] =DataFrame([self._noise,tf]).T
+        self._inputs[self._tf_name] =DataFrame([self._freq,tf]).T
+
+class SetOpenLoopData(SetPNCalcData):
+    _ParameterManager = OpenLoopParameter 
+    _amp = np.array([718589961.970159, 7185906.60906246, 71866.0551081057, 
+                     725.615560869816, 12.3726308452402, 1.00031528765996, 
+                     0.0588871802344158, 0.000723899599203854])
+    _rad = np.deg2rad(np.array([-179.992047600053, -179.920476052613, 
+                                -179.204812606648, -172.099601076092, 
+                                -126.297374340824, -101.982202912406, 
+                                -144.636561700446, -175.919922754962]))
+    _freq = Series([1,10,100,1000,10000, 100000, 1000000, 10000000])
+    
+    def _make_noise_data(self):
+        # No Noise set.
+        pass
+        
+    def _make_tf_data(self):
+        tf = Series(self._amp*np.exp(1j*self._rad))
+        self._inputs[self._tf_name] =DataFrame([self._freq,tf]).T
 
 if __name__=='__main__':
     unittest.main()

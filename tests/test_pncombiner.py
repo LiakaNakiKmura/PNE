@@ -847,29 +847,30 @@ class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):
             # If not called raise error.
             
             for args in self._get_argslist(write_mock.call_args_list):
-                # First argument is 
                 set_data = self._get_data_from_msg(args[self._msg_arg_order])
                 write_data = args[self._data_arg_order]
                 assert_frame_equal(set_data, write_data)
 
 @add_msg 
-class TestCombiningData(UsingPNDataBase,unittest.TestCase):
+class TestCombiningData(UsingPNDataBase, unittest.TestCase):
     
     def setUp(self):
         UsingPNDataBase.setUp(self)
         self._dummydatamng =DummyTransfuncNoiseData()
-        self.pnpm = PNPrmtrMng()
+        self._dummydatamng.set_dummydata()
         self.pnc = PNCombiner()
+        self._cls_loop_db = CloseLoopDataBase()
+        self._total_out_pmtr  = TotalOutParameter()
         
     
     def test_calc(self):
         self.pnc = PNCalc()
-        self._dummydatamng.set_dummydata1()
-        collectdata = self._dummydatamng.get_collect_data()
-        
         self.pnc.execute()
-        assert_array_almost_equal(collectdata, 
-                                  self.pndb.get_closeloop_noise(self.pnpm.total))
+        
+        collectdata = self._dummydatamng.get_collect_data()
+        calced = self._cls_loop_db.get_data(self._total_out_pmtr.name)
+        
+        assert_array_almost_equal(collectdata, calced)
         
 class DummyTransfuncNoiseData():
     # Set dummy data for database.
@@ -878,7 +879,7 @@ class DummyTransfuncNoiseData():
         self._set_combined_noise()
         return self.combined_noise
     
-    def set_dummydata1(self):
+    def set_dummydata(self):
         DataSetClasses = [SetOpenLoopData, SetRefData, SetVCOData]
         for Class in DataSetClasses:
             dataset = Class()

@@ -342,7 +342,8 @@ class RefParameter(ParameterManager):
 class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
-@read_only_getter_decorator({'name':'Total Out'})
+@read_only_getter_decorator({'name':'total_data'})
+# FIXME: Change name to Total Out.
 class TotalOutParameter(ParameterManager):
     _acceptable_databases = [CloseLoopDataBase]
 

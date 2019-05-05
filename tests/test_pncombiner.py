@@ -37,7 +37,8 @@ from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
                                         ParameterManager, RefParameter,
                                         VCOParameter, OpenLoopParameter,
                                         TotalOutParameter,
-                                        DataReader, DataWriter)
+                                        DataReader, DataWriter,
+                                        PhaseNoiseCalculator)
 
 # utlities.
 from context import src # path setting
@@ -52,6 +53,7 @@ import src.interface.intfc_com as intfc_com
 
 # tool class
 from src.dataio.csvio import (CSVIO)
+from src.utility.calc import MagLogUtil
 
 class UsingPNDataBase(object):
     '''
@@ -811,7 +813,7 @@ class TestPNDataWriter(UsingPNDataBase,unittest.TestCase):
         
     def _make_dataname_dummydata_df(self):
         make_dummy = MakeDummyDataForDataBase()  
-        self._dummydata ={}
+        self._dummydata ={} 
         
         for DB, PRM in self._writing_db_para_pairs:
             db = DB()
@@ -980,6 +982,59 @@ class SetOpenLoopData(SetPNCalcData):
     def _make_tf_data(self):
         tf = Series(self._amp*np.exp(1j*self._rad))
         self._inputs[self._tf_name] =DataFrame([self._freq,tf]).T
+
+class TestPhaseNoiseCalculator(UsingPNDataBase, unittest.TestCase):
+    #TODO: Different data
+    #TODO: Add data type
+    #TODO: Raise Error unless enough data.
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+        self._dummydatamng =DummyTransfuncNoiseData()
+        self._dummydatamng.set_dummydata()
+        self.pnc = PhaseNoiseCalculator()
+        self.mlu = MagLogUtil()
+        freq_column = PNPrmtrMng.index_freq
+        self._noise_columns = [freq_column, NoiseDataBase().index_val]
+        self._tf_columns = [freq_column, TransferfuncDataBase().index_val]
+        self._clsd_columns = [freq_column, CloseLoopDataBase().index_val]
+        self._precise_digit = 5
+        # Number of precise digit for test
+    
+    def test_normal_data(self):
+        self._calc_combine(self._get_norm_data)
+    
+    def _calc_combine(self, data_reader_func):
+        self.pnc.set_open_loop(self._openloop_data())
+        tf_data, in_data, correct_data = data_reader_func()
+        self.pnc.set_tf(tf_data)
+        self.pnc.set_noise(in_data)
+        out_data= self.pnc.get_compressed_noise()
+        assert_frame_equal(correct_data, out_data, 
+                           check_less_precise = self._precise_digit)
+    
+    def _get_norm_data(self):
+        freq = [10**i for i in range(5)]
+        in_noise = [-100 for _ in range(len(freq))]
+        out_noise = [-99.91270389, -99.22619035, -97.67739312, -119.22619035,
+                     -139.91270389]
+        tf_data = self._openloop_data().copy()
+        in_data = DataFrame([freq, in_noise], index = self._noise_columns).T
+        out_data = DataFrame([freq, out_noise], index = self._clsd_columns).T
+        # self._noise_columns is set to INDEX brcause transposition.
+        return (tf_data, in_data, out_data)
+    
+        
+    def _get_diff_freq_data(self):
+        # test for different range, lengeth, step frequency data
+        pass
+    
+    
+    def _openloop_data(self):
+        freq = [10**i for i in range(5)]
+        mag = [10**(2-i) for i in range(5)]
+        deg = [-180, -150, -135, -150, -180]
+        comp_val = self.mlu.magdeg2comp(mag, deg)
+        return DataFrame([freq, comp_val], index = self._tf_columns).T
 
 if __name__=='__main__':
     unittest.main()

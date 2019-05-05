@@ -35,91 +35,112 @@ class PNCombiner(Transaction):
         pass
 
 class PNCalc(Transaction):
+    # FIXME: Refactoring.
+    _noise = 'noise'
+    _tf = 'tf'
     def __init__(self):
         self._ndb = NoiseDataBase()
         self._tfdb = TransferfuncDataBase()
         self._cldb = CloseLoopDataBase()
         self.mlu = MagLogUtil()
-        self.pnpm = PNPrmtrMng()
+        self.opn_prm = OpenLoopParameter()
+        self._total_out_prm = TotalOutParameter()
+        self._noise_tf_pairs = NoiseTransfuncPairsManager()
         
     def execute(self):
         self._get_data()
         self._do_calc()
     
     def _get_data(self):
-        self._noise_names = self._ndb.get_names()
+        self._data_names = self._noise_tf_pairs.get_pair_names()
+        self._input_data= {}
+        for name, db in {self._noise:self._ndb, self._tf:self._tfdb}.items():
+            self._input_data[name] = self._get_datalist(db)
         self._noises = self._get_datalist(self._ndb)        
         self._tfs = self._get_datalist(self._tfdb)
-        self._opnlp = self._tfdb.get_data(self.pnpm.open_loop_gain)
+        self._opnlp = self._tfdb.get_data(self.opn_prm.name)
     
     def _get_datalist(self, database):
-        return {name: database.get_data(name) for name in self._noise_names}
+        return {name: database.get_data(name) for name in self._data_names}
     
     def _do_calc(self):
         '''
         Output noise = Transfer func from 
         '''
+        self._calc_closed_loop()
+        self._calc_compressed_data()
+        self._combine_each_pn()
+    
+    def _calc_closed_loop(self):
         self._closelp =1/(1+self._opnlp[self._tfdb.index_val])
         self._closed_pn = {}
-        for name in self._noise_names:
-            
-            filter_compression_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
-            filter_compression_log = self.mlu.mag2log(abs(filter_compression_mag),20)
-            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
-            + filter_compression_log
         
+    def __calc_compressed_data(self):
+        for name in self._data_names:
+            compressed_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
+            compressed_log = self.mlu.mag2log(abs(compressed_mag),20)
+            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
+            + compressed_log
+    
+    def _calc_compressed_data(self):
+        for name in self._data_names:
+            compressed_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
+            compressed_log = self.mlu.mag2log(abs(compressed_mag),20)
+            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
+            + compressed_log
+    
+    def _combine_each_pn(self):
         total_pn_val = np.array([-1e10 for _ in range(len(self._closelp))])
+        # Initialize data is set to small value to be ignored.
         for pn in self._closed_pn.values():
             add_pn =  self.mlu.log2mag(pn, N = 10)
             tota_pn_buf = self.mlu.log2mag(total_pn_val, 10)
             total_pn_val = self.mlu.mag2log(add_pn+tota_pn_buf, N = 10)
         total_pn = pd.concat([self._opnlp[self._tfdb.index_freq], total_pn_val],
                               axis = 1)
-        self._cldb.set_data(self.pnpm.total, total_pn)
-       
-class PNCalc2(Transaction):
-    #FIXME: Use Parameter Manager
+        self._cldb.set_data(self._total_out_prm.name, total_pn)
+
+class PhaseNoiseCalculator():
+    # Add comment of open loop gain sign.
     def __init__(self):
-        self._ndb = NoiseDataBase()
-        self._tfdb = TransferfuncDataBase()
-        self._cldb = CloseLoopDataBase()
         self.mlu = MagLogUtil()
-        self.pnpm = PNPrmtrMng()
+        self._read_column_name()
+    
+    def _read_column_name(self):
+        self._freq_column = PNPrmtrMng().index_freq
+        self._noise_column = NoiseDataBase().index_val
+        self._tf_column = TransferfuncDataBase().index_val
+        self._clsd_columns = [self._freq_column, 
+                              CloseLoopDataBase().index_val]        
+    
+    def set_open_loop(self, open_loop_dataframe):
+        # Open loop data must be greater than 0.
+        # Open loop unit is freq: Hz, Transfer fuction: complex.
+        self._olp = open_loop_dataframe
         
-    def execute(self):
-        self._get_data()
-        self._do_calc()
+    def set_noise(self, noise_dataframe):
+        self._noise = noise_dataframe
     
-    def _get_data(self):
-        self._noise_names = self._ndb.get_names()
-        self._noises = self._get_datalist(self._ndb)        
-        self._tfs = self._get_datalist(self._tfdb)
-        self._opnlp = self._tfdb.get_data(self.pnpm.open_loop_gain)
-    
-    def _get_datalist(self, database):
-        return {name: database.get_data(name) for name in self._noise_names}
-    
-    def _do_calc(self):
-        '''
-        Output noise = Transfer func from 
-        '''
-        self._closelp =1/(1+self._opnlp[self._tfdb.index_val])
-        self._closed_pn = {}
-        for name in self._noise_names:
-            
-            filter_compression_mag = self._closelp*self._tfs[name][self._tfdb.index_val]
-            filter_compression_log = self.mlu.mag2log(abs(filter_compression_mag),20)
-            self._closed_pn[name] = self._noises[name][self._ndb.index_val]\
-            + filter_compression_log
+    def set_tf(self, transfer_function_dataframe):
+        self._tf = transfer_function_dataframe
         
-        total_pn_val = np.array([-1e10 for _ in range(len(self._closelp))])
-        for pn in self._closed_pn.values():
-            add_pn =  self.mlu.log2mag(pn, N = 10)
-            tota_pn_buf = self.mlu.log2mag(total_pn_val, 10)
-            total_pn_val = self.mlu.mag2log(add_pn+tota_pn_buf, N = 10)
-        total_pn = pd.concat([self._opnlp[self._tfdb.index_freq], total_pn_val],
-                              axis = 1)
-        self._cldb.set_data(self.pnpm.total, total_pn)
+    def get_compressed_noise(self):
+        return self._calc()
+    
+    def _calc(self):
+        freq = self._olp.loc[:, self._freq_column]
+        olp_tf = self._olp.loc[:, self._tf_column]
+        out_tf = self._tf.loc[:, self._tf_column]
+        noise = self._noise.loc[:, self._noise_column]
+        
+        clsdlp = abs(out_tf/(1+olp_tf))
+        # Close loop is calculated as T_out/(1+T_total)
+        
+        cmprd_noise = self.mlu.mag2log(clsdlp, N=20)+noise        
+        return DataFrame([freq, cmprd_noise], index = self._clsd_columns,
+                         dtype = 'f8').T
+        # self._clsd_columns is set to index because transpositon the dataframe.
+
 
 @singleton_decorator
 class PNDataBase():
@@ -267,7 +288,7 @@ class TransferfuncDataBase(IndivDataBase):
         set to database.
         
         data has following columns.
-        (freq, amplitude, angular)
+        (freq[Hz], amplitude[mag], angular[deg])
         '''
         freq = data.iloc[:, 0]
         amplitude = data.iloc[:, 1]
@@ -328,8 +349,8 @@ class ParameterManager(metaclass = abc.ABCMeta):
         self._data_type = self._acceptable_databases[0]().index_val
         # init data_type is first database in self._acceptable_databases.
 
-@read_only_getter_decorator({'name':'open_loop_gain'})
-# FIXME: fix parameter name.
+#@read_only_getter_decorator({'name':'open_loop_gain'})
+@read_only_getter_decorator({'name':'open loop gain'})
 class OpenLoopParameter(ParameterManager):
     #_message = 'open loop of PLL'
     _acceptable_databases = [TransferfuncDataBase]
@@ -342,8 +363,8 @@ class RefParameter(ParameterManager):
 class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
 
-@read_only_getter_decorator({'name':'total_data'})
-# FIXME: Change name to Total Out.
+#@read_only_getter_decorator({'name':'total_data'})
+@read_only_getter_decorator({'name':'total out'})
 class TotalOutParameter(ParameterManager):
     _acceptable_databases = [CloseLoopDataBase]
 

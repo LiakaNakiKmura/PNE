@@ -199,6 +199,7 @@ class TestRangeAdjuster(unittest.TestCase):
     # TODO: Raise Error if no common range
     # TODO: Raise Error if range name is not set to class.
     # TODO: Raise Error if range name is not exist in DataFrame.
+    # TODO: Sort if range is not ordered.
     # TODO: Set range step.
     # TODO: Set range min, max
     # TODO: Set type for interporation of range. log or mag or sets of data or
@@ -210,31 +211,25 @@ class TestRangeAdjuster(unittest.TestCase):
         self._precise_digit = 5
     
     def test_out_range_data(self):
-        # Range is fit to inband data.
+        # range is set as most inband.
         
         # Set range column name.
         self.ra.set_column(self._freq)   
         freq1 = [10**i for i in range(10)]
         freq2 = [freq1[0]/10] + freq1 + [freq1[-1]*10]
-        # Add out band data to freq2 from freq1.        
-        
-        df2 = DataFrame([freq2,np.random.rand(len(freq2))], 
-                        index = self._columns, dtype = 'f8').T
-        self.ra.set_data(df2, 'df2')
-        
+        # Add out band data to freq2 from freq1.  
+        df2 = self._make_set_random_df(freq2, 'df2')        
         assert_frame_equal(df2, self.ra.get_ranged_data('df2'))
         # Get the same data as input data because range is not changed.
         
-        df1 = DataFrame([freq1,np.random.rand(len(freq1))], 
-                        index = self._columns, dtype = 'f8').T
-        self.ra.set_data(df1, 'df1')
+        df1 = self._make_set_random_df(freq1, 'df1')
+        # Set narrower range freq1.
         
-        
-        freq_rng = df1.loc[:, self._freq]
-        new_df2 = df2[df2.loc[:, self._freq].isin(freq_rng)].reset_index(\
+        new_df2 = df2[df2.loc[:, self._freq].isin(freq1)].reset_index(\
                       drop = True)
         # Calc the narrowed range df2 for correct data.
         assert_frame_equal(new_df2, self.ra.get_ranged_data('df2'))
+        assert_frame_equal(df1, self.ra.get_ranged_data('df1'))
         
         """
         correct_range = Series(freq1, name = self._freq, dtype = 'f8')
@@ -242,7 +237,33 @@ class TestRangeAdjuster(unittest.TestCase):
                             check_less_precise = self._precise_digit)
         """
         
-                        
+    def test_needset_data(self):
+        # Range is fit to inband data.
+        
+        # Set range column name.
+        self.ra.set_column(self._freq)   
+        freq1 = [10**int(i/2)*(5**(i%2)) for i in range(19)]
+        # 1, 5, 10, 50....1e9
+        freq2 = [10**(int(i/2)-1)*(3**(i%2)) for i in range(19)]
+        # 0.1,0.3, 1, ... 1e8
+        
+        freq_common = sorted(list(set(freq1[:-2] + freq2[2:])))
+        # cmmmon list of freq.
+               
+        df1 = self._make_set_random_df(freq1, 'df1')        
+        df2 = self._make_set_random_df(freq2, 'df2')
+        
+        correct_range = Series(freq_common, name = self._freq, dtype = 'f8')
+        assert_series_equal(correct_range, self.ra.get_common_range(), 
+                            check_less_precise = self._precise_digit)
+        
+        
+        
+    def _make_set_random_df(self, range_itr, name):
+        df = DataFrame([range_itr,np.random.rand(len(range_itr))], 
+                        index = self._columns, dtype = 'f8').T
+        self.ra.set_data(df, name)
+        return df
     
     
 if __name__=='__main__':

@@ -53,13 +53,28 @@ class MagLogUtil():
         return lambda x_new : interpolite(np.log10(x_new))
 
 class RangeAdjuster():
+    '''
+    Adjust range of data.
+    After setting some data, possible range is calculated and get fit data from
+    input data.
+    '''
+    
     def __init__(self):
         self._datadict = {}
-        pass
+        
     def set_column(self, column_name):
+        '''
+        set the column name as range. This name is used for search range of 
+        each data set in set_data.
+        column_name: number or string object to be used to column of dataframe.
+        '''
         self._column_name = column_name
     
     def set_data(self, target_dataframe, name):
+        '''
+        set data.
+        target_dataframe: DataFrame object. This has 2 length of colmuns.
+        '''
         self._datadict[name] = target_dataframe
     
     def get_ranged_data(self, name):
@@ -67,15 +82,28 @@ class RangeAdjuster():
         return self._get_interpolated_range(self._datadict[name])
     
     def get_common_range(self):
-        return self._common_range
+        self._calc_min_max_range()
+        self._make_common_range()
+        return self._new_range
     
     def _calc_min_max_range(self):
-        freq_data = [df.loc[:, self._column_name]\
-                     for df in self._datadict.values()]
-        self._min_val = max([S.min() for S in freq_data])
+        self.freq_data = [df.loc[:, self._column_name]\
+                          for df in self._datadict.values()]
+        self._min_val = max([S.min() for S in self.freq_data])
         # get the maximum data from each minimudata for narrowest range.
-        self._max_val = min([S.max() for S in freq_data])
+        self._max_val = min([S.max() for S in self.freq_data])
         # get the maximum data from each minimudata for narrowest range.
+    
+    def _make_common_range(self):
+        extendedS = Series([])
+        for dataS in self.freq_data:
+            new_range = dataS[(self._min_val <= dataS) &\
+                              (dataS <= self._max_val) ]
+            extendedS = extendedS.append(new_range)
+        
+        self._new_range = Series(sorted(extendedS.unique()),
+                                 name = self._column_name,
+                                 dtype = 'f8')
     
     def _get_interpolated_range(self, df):
         S_range = df.loc[:, self._column_name]

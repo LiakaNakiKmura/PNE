@@ -11,6 +11,8 @@ import unittest
 # 3rd party's module
 import numpy as np
 from numpy.testing import assert_array_almost_equal
+from pandas import DataFrame, Series
+from pandas.testing import assert_series_equal, assert_frame_equal
 
 # Original module  
 from context import src # path setting
@@ -18,6 +20,7 @@ from context import src # path setting
 # Target class
 from src.utility.utility import singleton_decorator
 from src.utility.calc import MagLogUtil
+from src.utility.calc import RangeAdjuster
 
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
@@ -183,7 +186,64 @@ class TestMagLog_utility(unittest.TestCase):
         val2 = [np.nan] + val2 + [np.nan]
         
         func = mlu.ylogx_interpolite(freq1, val1,bounds_error = False)
-        assert_array_almost_equal(val2, func(freq2))            
+        assert_array_almost_equal(val2, func(freq2))
+
+class TestRangeAdjuster(unittest.TestCase):
+    '''
+    Test for Range Adjuster.
+    Adjust the data for common range data.
+    '''
+    # TODO: Get interportaed each data.
+    # TODO: Set the type of interpolation. default is 'Log freq - Value dB'
+    # TODO: Get Range
+    # TODO: Raise Error if no common range
+    # TODO: Raise Error if range name is not set to class.
+    # TODO: Raise Error if range name is not exist in DataFrame.
+    # TODO: Set range step.
+    # TODO: Set range min, max
+    # TODO: Set type for interporation of range. log or mag or sets of data or
+    #       set new range. default: sets of data.
+    def setUp(self):
+        self.ra = RangeAdjuster()
+        self._freq = 'freq'
+        self._columns = [self._freq, 'DummyData'] 
+        self._precise_digit = 5
+    
+    def test_out_range_data(self):
+        # Range is fit to inband data.
+        
+        # Set range column name.
+        self.ra.set_column(self._freq)   
+        freq1 = [10**i for i in range(10)]
+        freq2 = [freq1[0]/10] + freq1 + [freq1[-1]*10]
+        # Add out band data to freq2 from freq1.        
+        
+        df2 = DataFrame([freq2,np.random.rand(len(freq2))], 
+                        index = self._columns, dtype = 'f8').T
+        self.ra.set_data(df2, 'df2')
+        
+        assert_frame_equal(df2, self.ra.get_ranged_data('df2'))
+        # Get the same data as input data because range is not changed.
+        
+        df1 = DataFrame([freq1,np.random.rand(len(freq1))], 
+                        index = self._columns, dtype = 'f8').T
+        self.ra.set_data(df1, 'df1')
+        
+        
+        freq_rng = df1.loc[:, self._freq]
+        new_df2 = df2[df2.loc[:, self._freq].isin(freq_rng)].reset_index(\
+                      drop = True)
+        # Calc the narrowed range df2 for correct data.
+        assert_frame_equal(new_df2, self.ra.get_ranged_data('df2'))
+        
+        """
+        correct_range = Series(freq1, name = self._freq, dtype = 'f8')
+        assert_series_equal(correct_range, self.ra.get_common_range(), 
+                            check_less_precise = self._precise_digit)
+        """
+        
+                        
+    
     
 if __name__=='__main__':
     unittest.main()     

@@ -51,3 +51,34 @@ class MagLogUtil():
         
         interpolite = interp1d(log10x[valid], Series(y)[valid], *args, **kwargs)
         return lambda x_new : interpolite(np.log10(x_new))
+
+class RangeAdjuster():
+    def __init__(self):
+        self._datadict = {}
+        pass
+    def set_column(self, column_name):
+        self._column_name = column_name
+    
+    def set_data(self, target_dataframe, name):
+        self._datadict[name] = target_dataframe
+    
+    def get_ranged_data(self, name):
+        self._calc_min_max_range()
+        return self._get_interpolated_range(self._datadict[name])
+    
+    def get_common_range(self):
+        return self._common_range
+    
+    def _calc_min_max_range(self):
+        freq_data = [df.loc[:, self._column_name]\
+                     for df in self._datadict.values()]
+        self._min_val = max([S.min() for S in freq_data])
+        # get the maximum data from each minimudata for narrowest range.
+        self._max_val = min([S.max() for S in freq_data])
+        # get the maximum data from each minimudata for narrowest range.
+    
+    def _get_interpolated_range(self, df):
+        S_range = df.loc[:, self._column_name]
+        new_range_bool = (self._min_val <= S_range) &\
+        (S_range <= self._max_val)
+        return df.loc[new_range_bool,:].reset_index(drop = True)

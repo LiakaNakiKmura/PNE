@@ -11,7 +11,7 @@ import numbers
 # 3rd party's module
 import numpy as np
 import pandas as pd
-from pandas import Series
+from pandas import Series, DataFrame
 from scipy.interpolate import interp1d
 
 # Original module  
@@ -58,9 +58,11 @@ class RangeAdjuster():
     After setting some data, possible range is calculated and get fit data from
     input data.
     '''
+    _data_column_number = 1
     
     def __init__(self):
         self._datadict = {}
+        self.mlu = MagLogUtil()
         
     def set_column(self, column_name):
         '''
@@ -78,14 +80,20 @@ class RangeAdjuster():
         self._datadict[name] = target_dataframe
     
     def get_ranged_data(self, name):
-        self._calc_min_max_range()
-        return self._get_interpolated_range(self._datadict[name])
+        # Return the interpolated common ranged 'dataframe' data.
+        self._calc_range()
+        #return self._get_interpolated_range(self._datadict[name])
+        return self._get_interpolated_range(name)
     
     def get_common_range(self):
-        self._calc_min_max_range()
-        self._make_common_range()
+        # Return the just common 'range' Series data.
+        self._calc_range()
         return self._new_range
     
+    def _calc_range(self):
+        self._calc_min_max_range()
+        self._make_common_range()
+        
     def _calc_min_max_range(self):
         self.freq_data = [df.loc[:, self._column_name]\
                           for df in self._datadict.values()]
@@ -105,8 +113,18 @@ class RangeAdjuster():
                                  name = self._column_name,
                                  dtype = 'f8')
     
-    def _get_interpolated_range(self, df):
+    def _get_interpolated_range2(self, df):
         S_range = df.loc[:, self._column_name]
         new_range_bool = (self._min_val <= S_range) &\
         (S_range <= self._max_val)
         return df.loc[new_range_bool,:].reset_index(drop = True)
+    
+    def _get_interpolated_range(self, name):
+        df = self._datadict[name]
+        range_S = df.loc[:,self._column_name]
+        data_S = df.iloc[:, self._data_column_number]
+        inter_politer = self.mlu.ylogx_interpolite(range_S, data_S)
+        inter_plited = inter_politer(self._new_range)
+        return DataFrame([self._new_range, inter_plited],
+                         index=df.columns,
+                         dtype = 'f8').T

@@ -204,6 +204,8 @@ class TestRangeAdjuster(unittest.TestCase):
     # TODO: Set range min, max
     # TODO: Set type for interporation of range. log or mag or sets of data or
     #       set new range. default: sets of data.
+    # TODO: Raise error if column is not set.
+    
     def setUp(self):
         self.ra = RangeAdjuster()
         self._freq = 'freq'
@@ -218,11 +220,13 @@ class TestRangeAdjuster(unittest.TestCase):
         freq1 = [10**i for i in range(10)]
         freq2 = [freq1[0]/10] + freq1 + [freq1[-1]*10]
         # Add out band data to freq2 from freq1.  
-        df2 = self._make_set_random_df(freq2, 'df2')        
+        df2 = self._make_set_random_df(freq2)      
+        self.ra.set_data(df2, 'df2')  
         assert_frame_equal(df2, self.ra.get_ranged_data('df2'))
         # Get the same data as input data because range is not changed.
         
-        df1 = self._make_set_random_df(freq1, 'df1')
+        df1 = self._make_set_random_df(freq1)
+        self.ra.set_data(df1, 'df1')
         # Set narrower range freq1.
         
         new_df2 = df2[df2.loc[:, self._freq].isin(freq1)].reset_index(\
@@ -248,23 +252,33 @@ class TestRangeAdjuster(unittest.TestCase):
         # 0.1,0.3, 1, ... 1e8
         
         freq_common = sorted(list(set(freq1[:-2] + freq2[2:])))
-        # cmmmon list of freq.
+        # cmmmon list of freq. drop out band, combine each data.
                
-        df1 = self._make_set_random_df(freq1, 'df1')        
-        df2 = self._make_set_random_df(freq2, 'df2')
+        df1 = self._make_loglog_df(freq1)        
+        self.ra.set_data(df1, 'df1')
+        df1_inter = self._make_loglog_df(freq_common)
+        
+        df2 = self._make_loglog_df(freq2, tendency = -30)
+        self.ra.set_data(df2, 'df2')
+        df2_inter = self._make_loglog_df(freq_common, tendency = -30)
         
         correct_range = Series(freq_common, name = self._freq, dtype = 'f8')
         assert_series_equal(correct_range, self.ra.get_common_range(), 
                             check_less_precise = self._precise_digit)
         
+        assert_frame_equal(df1_inter, self.ra.get_ranged_data('df1'))
+        assert_frame_equal(df2_inter, self.ra.get_ranged_data('df2'))
         
         
-    def _make_set_random_df(self, range_itr, name):
+    def _make_set_random_df(self, range_itr):
         df = DataFrame([range_itr,np.random.rand(len(range_itr))], 
                         index = self._columns, dtype = 'f8').T
-        self.ra.set_data(df, name)
         return df
     
+    def _make_loglog_df(self, range_itr, tendency = -20, offset = -70):
+        val = [ offset + tendency*np.log10(freq/1) for freq in range_itr]
+        df = DataFrame([range_itr,val], index = self._columns, dtype = 'f8').T
+        return df
     
 if __name__=='__main__':
     unittest.main()     

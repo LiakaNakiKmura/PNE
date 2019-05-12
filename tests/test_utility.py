@@ -21,9 +21,14 @@ from context import src # path setting
 from src.utility.utility import singleton_decorator
 from src.utility.calc import MagLogUtil
 from src.utility.calc import RangeAdjuster
+from src.utility.calc import CalcUtilError
 
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
+@add_msg
+class TestCalUtilError(unittest.TestCase):
+    def test_subclass(self):
+        self.assertTrue(issubclass(CalcUtilError, Exception))
 
 class Signletone_test_base():
     """
@@ -196,15 +201,17 @@ class TestRangeAdjuster(unittest.TestCase):
     # TODO: Get interportaed each data.
     # TODO: Set the type of interpolation. default is 'Log freq - Value dB'
     # TODO: Get Range
-    # TODO: Raise Error if no common range
+    # TODO: Raise error if column is not set.
     # TODO: Raise Error if range name is not set to class.
     # TODO: Raise Error if range name is not exist in DataFrame.
-    # TODO: Sort if range is not ordered.
+    
+    #### Future plan if demanded ####
     # TODO: Set range step.
     # TODO: Set range min, max
+    # TODO: Raise Error if setting min, max is out of range
+    # TODO: Sort if range is not ordered.
     # TODO: Set type for interporation of range. log or mag or sets of data or
     #       set new range. default: sets of data.
-    # TODO: Raise error if column is not set.
     
     def setUp(self):
         self.ra = RangeAdjuster()
@@ -235,12 +242,6 @@ class TestRangeAdjuster(unittest.TestCase):
         assert_frame_equal(new_df2, self.ra.get_ranged_data('df2'))
         assert_frame_equal(df1, self.ra.get_ranged_data('df1'))
         
-        """
-        correct_range = Series(freq1, name = self._freq, dtype = 'f8')
-        assert_series_equal(correct_range, self.ra.get_common_range(), 
-                            check_less_precise = self._precise_digit)
-        """
-        
     def test_needset_data(self):
         # Range is fit to inband data.
         
@@ -269,6 +270,26 @@ class TestRangeAdjuster(unittest.TestCase):
         assert_frame_equal(df1_inter, self.ra.get_ranged_data('df1'))
         assert_frame_equal(df2_inter, self.ra.get_ranged_data('df2'))
         
+    def test_no_column_name(self):
+        '''
+        If column name is not set. Raise Error.
+        '''
+        freq1 = [10**i for i in range(10)]
+        freq2 = [freq1[0]/10] + freq1 + [freq1[-1]*10]
+        
+        df1 = self._make_set_random_df(freq2)      
+        self.ra.set_data(df1, 'df1')
+        df2 = self._make_set_random_df(freq2)      
+        self.ra.set_data(df2, 'df2')
+        
+        self.assertRaises(CalcUtilError, self.ra.get_ranged_data, 'df1')
+        self.assertRaises(CalcUtilError, self.ra.get_ranged_data, 'df2')
+        self.assertRaises(CalcUtilError, self.ra.get_common_range)
+        
+        self.ra.set_column('No Such a column')
+        self.assertRaises(KeyError, self.ra.get_ranged_data, 'df1')
+        self.assertRaises(KeyError, self.ra.get_ranged_data, 'df2')
+        self.assertRaises(KeyError, self.ra.get_common_range)
         
     def _make_set_random_df(self, range_itr):
         df = DataFrame([range_itr,np.random.rand(len(range_itr))], 

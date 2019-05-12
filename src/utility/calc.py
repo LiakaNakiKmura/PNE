@@ -16,6 +16,8 @@ from scipy.interpolate import interp1d
 
 # Original module  
 
+class CalcUtilError(Exception):pass
+
 class MagLogUtil():
     
     def _chk_type_and_apply_func(self, conv_func, data, N):
@@ -63,6 +65,7 @@ class RangeAdjuster():
     def __init__(self):
         self._datadict = {}
         self.mlu = MagLogUtil()
+        self._column_name = None
         
     def set_column(self, column_name):
         '''
@@ -80,21 +83,38 @@ class RangeAdjuster():
         self._datadict[name] = target_dataframe
     
     def get_ranged_data(self, name):
-        # Return the interpolated common ranged 'dataframe' data.
+        '''
+        Return the interpolated common ranged 'dataframe' data.
+        data must be (range, data) pairs. 2nd column is used as data.
+        '''
+        self._check_setting()
         self._calc_range()
-        #return self._get_interpolated_range(self._datadict[name])
         return self._get_interpolated_range(name)
     
     def get_common_range(self):
         # Return the just common 'range' Series data.
+        self._check_setting()
         self._calc_range()
         return self._new_range
     
+    def _check_setting(self):
+        if self._column_name is None:
+            raise CalcUtilError('column_name must be set.')
+            
+        for df in self._datadict.values():
+            if not self._column_name in df.columns:
+                raise KeyError(self._column_name)
+
     def _calc_range(self):
         self._calc_min_max_range()
         self._make_common_range()
         
     def _calc_min_max_range(self):
+        '''
+        Serach min max of common range of each data.
+        self._min_val, self._max_val is in band minimum and maximum of range
+        data.
+        '''
         self.freq_data = [df.loc[:, self._column_name]\
                           for df in self._datadict.values()]
         self._min_val = max([S.min() for S in self.freq_data])
@@ -103,6 +123,12 @@ class RangeAdjuster():
         # get the maximum data from each minimudata for narrowest range.
     
     def _make_common_range(self):
+        '''
+        Common range of all range data. self._new_range is result.
+        1. pick up in band data.
+        2. Make "Set" of each data.
+        3. Sorted
+        '''
         extendedS = Series([])
         for dataS in self.freq_data:
             new_range = dataS[(self._min_val <= dataS) &\
@@ -113,18 +139,19 @@ class RangeAdjuster():
                                  name = self._column_name,
                                  dtype = 'f8')
     
-    def _get_interpolated_range2(self, df):
-        S_range = df.loc[:, self._column_name]
-        new_range_bool = (self._min_val <= S_range) &\
-        (S_range <= self._max_val)
-        return df.loc[new_range_bool,:].reset_index(drop = True)
-    
+
     def _get_interpolated_range(self, name):
+        '''
+        Return dataframe of interpolated data about self._new_range.
+        '''
+        
         df = self._datadict[name]
         range_S = df.loc[:,self._column_name]
         data_S = df.iloc[:, self._data_column_number]
+        
         inter_politer = self.mlu.ylogx_interpolite(range_S, data_S)
         inter_plited = inter_politer(self._new_range)
+        
         return DataFrame([self._new_range, inter_plited],
                          index=df.columns,
                          dtype = 'f8').T

@@ -21,9 +21,18 @@ class PathDialog(PathAsk):
         pass
     
     def get_load_path(self, message):
-        return filedialog.askopenfilenames(title = message) 
+        return filedialog.askopenfilename(title = message) 
+    
+    def get_save_path(self, message):
+        return filedialog.asksaveasfilename(title = message) 
+
 
 if __name__ == '__main__':
+    import tkinter
+    root=tkinter.Tk() #python3
+    #root.withdraw()
     pth_dia = PathDialog()
     print(pth_dia.get_load_path('Reading Test'))
-    input()
+    root.quit()
+    root.mainloop()
+    root.quit()

@@ -43,6 +43,7 @@ class TestCombinePN(TestForMethodExist, unittest.TestCase):
                          (Reader,'read'),
                          (Writer,'write'),
                          (PathAsk,'get_load_path'),
+                         (PathAsk,'get_save_path'),
                          (ValueAsk, 'get_value')
                          )
 

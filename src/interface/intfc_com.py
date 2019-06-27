@@ -31,6 +31,10 @@ class PathAsk(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def get_load_path(self, message):
         pass
+    
+    @abc.abstractmethod
+    def get_save_path(self, message):
+        pass
 
 class ValueAsk(metaclass = abc.ABCMeta):
     @abc.abstractmethod

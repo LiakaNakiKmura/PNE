@@ -126,9 +126,46 @@ class TestCombinePN(unittest.TestCase):
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
 
-
-
-
+class _TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
+    _db_prm_path_pairs=[[NoiseDataBase, RefParameter, 
+                         'tests.dummy_data.data1.Ref.csv'],
+                        [NoiseDataBase, VCOParameter,
+                         'tests.dummy_data.data1.VCO.csv'],
+                        [TransferfuncDataBase, RefParameter,
+                         'tests.dummy_data.data1.Open_loop.csv'],
+                        [TransferfuncDataBase, VCOParameter,
+                         'tests.dummy_data.data1.VCOtf.csv'],
+                        [TransferfuncDataBase, OpenLoopParameter,
+                         'tests.dummy_data.data1.Open_loop.csv']]
+    # Pairs of DataBase, Parameter, dummy path. 
+    _corret_data_path = 'tests.dummy_data.data1.correct_data.csv'
+    
+    def setUp(self):
+        UsingPNDataBase.setUp(self)
+    
+    def _test_combine(self):
+        mock_path ='src.dataio.io_com.PathDialog.get_load_path'
+        with patch(mock_path) as read_mock:
+            read_mock.return_value = dummydata
+        pass
+    
+    def _return_target_path(self):
+        def mock_path(msg):
+            pass
+        pass
+    
+    def _make_msg_path_pairs(self):
+        # Make matrix to search message and corresponded path.
+        df = DataFrame([], columns = ['db', 'prm', 'path'])
+        """
+        for num, pairs in enumerate(self._db_prm_path_pairs):
+            DB, PRM, path = *pairs
+            #DataBase, ParameterManeger, path.
+            db = DB()
+            prm = PRM()
+            df.loc[num,:]=[db.index_val, prm, path]
+        """
+        #FIXME
 
 class MakeDummyDataForDataBase():
     '''
@@ -989,21 +1026,30 @@ class TestPhaseNoiseCalculator(UsingPNDataBase, unittest.TestCase):
     #TODO: Raise Error unless enough data.
     def setUp(self):
         UsingPNDataBase.setUp(self)
-        self._dummydatamng =DummyTransfuncNoiseData()
-        self._dummydatamng.set_dummydata()
         self.pnc = PhaseNoiseCalculator()
         self.mlu = MagLogUtil()
-        freq_column = PNPrmtrMng.index_freq
+        self._setupu_columns()
+        self._precise_digit = 5
+        # Number of precise digit for test
+    
+    def _setupu_columns(self):
+        freq_column = PNPrmtrMng.index_freq        
         self._noise_columns = [freq_column, NoiseDataBase().index_val]
         self._tf_columns = [freq_column, TransferfuncDataBase().index_val]
         self._clsd_columns = [freq_column, CloseLoopDataBase().index_val]
-        self._precise_digit = 5
-        # Number of precise digit for test
+        
     
     def test_normal_data(self):
         self._calc_combine(self._get_norm_data)
     
     def _calc_combine(self, data_reader_func):
+        '''
+        1. Set openloop transfer function.
+        2. set transfer function of target data.
+        3. set noise of target.
+        4. Get the calculated data.
+        '''
+        
         self.pnc.set_open_loop(self._openloop_data())
         tf_data, in_data, correct_data = data_reader_func()
         self.pnc.set_tf(tf_data)
@@ -1023,18 +1069,23 @@ class TestPhaseNoiseCalculator(UsingPNDataBase, unittest.TestCase):
         # self._noise_columns is set to INDEX brcause transposition.
         return (tf_data, in_data, out_data)
     
-        
-    def _get_diff_freq_data(self):
-        # test for different range, lengeth, step frequency data
-        pass
-    
-    
     def _openloop_data(self):
         freq = [10**i for i in range(5)]
         mag = [10**(2-i) for i in range(5)]
         deg = [-180, -150, -135, -150, -180]
         comp_val = self.mlu.magdeg2comp(mag, deg)
         return DataFrame([freq, comp_val], index = self._tf_columns).T
+
+    def test_diff_range_data(self):
+        self._calc_combine(self._get_norm_data)
+
+    def _get_diff_freq_data(self):
+        # TODO: Add test for diffference data.
+        # test for different range, lengeth, step frequency data.
+        # range: minimum range.
+        # step: all set of inband.
+        pass
+    
 
 if __name__=='__main__':
     unittest.main()

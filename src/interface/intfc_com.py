@@ -29,7 +29,7 @@ class Writer(metaclass = abc.ABCMeta):
 
 class PathAsk(metaclass = abc.ABCMeta):
     @abc.abstractmethod
-    def get_path(self, message):
+    def get_load_path(self, message):
         pass
 
 class ValueAsk(metaclass = abc.ABCMeta):

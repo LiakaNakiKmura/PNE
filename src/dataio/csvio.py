@@ -27,7 +27,7 @@ class CSVIO(Reader, Writer):
         '''
         DataFrame is get from csv.
         '''
-        data_path = self.path_dialog.get_path(self._message(data_name))
+        data_path = self.path_dialog.get_load_path(self._message(data_name))
         return  pd.read_csv(data_path)
     
     def write(self, data_name, data_df):
@@ -35,7 +35,7 @@ class CSVIO(Reader, Writer):
         DataFrame is conversed to csv
         NO index.
         '''
-        data_path = self.path_dialog.get_path(self._message(data_name))
+        data_path = self.path_dialog.get_load_path(self._message(data_name))
         data_df.to_csv(data_path, index = False)
     
     def _message(self, data_name):

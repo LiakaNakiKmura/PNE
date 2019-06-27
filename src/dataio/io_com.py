@@ -20,10 +20,10 @@ class PathDialog(PathAsk):
     def __init__(self):
         pass
     
-    def get_path(self, message):
+    def get_load_path(self, message):
         return filedialog.askopenfilenames(title = message) 
 
 if __name__ == '__main__':
     pth_dia = PathDialog()
-    print(pth_dia.get_path('Reading Test'))
+    print(pth_dia.get_load_path('Reading Test'))
     input()

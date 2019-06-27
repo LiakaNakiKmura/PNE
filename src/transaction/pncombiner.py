@@ -135,7 +135,6 @@ class PhaseNoiseCalculator():
         
         clsdlp = abs(out_tf/(1+olp_tf))
         # Close loop is calculated as T_out/(1+T_total)
-        
         cmprd_noise = self.mlu.mag2log(clsdlp, N=20)+noise        
         return DataFrame([freq, cmprd_noise], index = self._clsd_columns,
                          dtype = 'f8').T

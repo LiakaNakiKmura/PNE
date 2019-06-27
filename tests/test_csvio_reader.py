@@ -60,9 +60,9 @@ class Test_writing(unittest.TestCase):
     def test_data_writing(self):
         self.ddft=DummyDataForTest()
         dummy_path = self.ddft.get_dummy_write_data_path()
-        with patch('src.dataio.io_com.PathDialog.get_load_path')\
-        as get_load_path_mock:
-            get_load_path_mock.return_value = dummy_path
+        with patch('src.dataio.io_com.PathDialog.get_save_path')\
+        as get_save_path_mock:
+            get_save_path_mock.return_value = dummy_path
             cio = csvio.CSVIO()
             cio.write('Asking message', self.ddft.outputdata)
             data = pd.read_csv(dummy_path)

@@ -21,6 +21,7 @@ from src.dataio.io_com import PathDialog
 
 class CSVIO(Reader, Writer):
     def __init__(self):
+        # TODO: Changalble to GUI interface.
         self.path_dialog =  PathDialog()
         
     def read(self, data_name):

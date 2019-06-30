@@ -60,6 +60,7 @@ class RangeAdjuster():
     After setting some data, possible range is calculated and get fit data from
     input data.
     '''
+    # FIXME: Buf exists. 
     _data_column_number = 1
     
     def __init__(self):

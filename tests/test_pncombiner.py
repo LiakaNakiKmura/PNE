@@ -146,6 +146,7 @@ class TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
     
     def setUp(self):
         UsingPNDataBase.setUp(self)
+        self.ugmfpm = UtilityGettingMessageFromParameterManager()
     
     def _test_combine(self):
         mock_path ='src.dataio.io_com.PathDialog.get_load_path'
@@ -153,16 +154,20 @@ class TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
             read_mock.return_value = dummydata
         pass
     
-    def _return_target_path(self):
+    def _return_target_path(self, DataBase, ParameterManagerClass):
         '''
-        return thefunction.
+        return the function: return the matched path to the message.
         '''
-        """
-        FIXME: This class should not know how to get the target from the 
-        message. Just some especially class should know the rule of message.
-        """
+        msg_path_pairs = {}
+        for DataBase, PramaterManagerClass, path in self._db_prm_path_pairs:
+            self.ugmfpm.set_database(DataBase)
+            self.ugmfpm.set_parametermanager(ParameterManagerClass)
+            msg = self.ugmfpm.get_message()
+            msg_path_pairs[msg] = path
+        
         def mock_path(msg):
-            pass
+            print(msg_path_pairs[msg])
+            return msg_path_pairs[msg]
     
     def _make_msg_path_pairs(self):
         # Make matrix to search message and corresponded path.
@@ -506,17 +511,18 @@ class TestTotalOutParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = TotalOutParameter
     _acceptable_databases = [CloseLoopDataBase]
     
-class UtilityGettingMessageFromParameterManager():
-    def __init__(self, ParameterManagerClass, DataBase):
-        self._prm = ParameterManagerClass()
-        self._db =DataBase()
-        self._validataion_class()
-    
-    def _validataion_class(self):
-        assert issubclass(self._prm.__class__, ParameterManager),\
-        'Parameter Manager class must be subclass of ParameterManager'
-        assert issubclass(self._db.__class__, IndivDataBase),\
+class UtilityGettingMessageFromParameterManager():    
+    def set_database(self, DataBase):
+        assert issubclass(DataBase, IndivDataBase),\
         'Parameter Manager class must be subclass of InidivDataBase'
+        
+        self._db =DataBase()
+    
+    def set_parametermanager(self, ParameterManagerClass):
+        assert issubclass(ParameterManagerClass, ParameterManager),\
+        'Parameter Manager class must be subclass of ParameterManager'
+        
+        self._prm =ParameterManagerClass()
     
     def get_message(self):
         self._prm.set_type(self._db.index_val)

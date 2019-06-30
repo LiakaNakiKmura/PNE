@@ -505,6 +505,22 @@ class TestVCOParameter(TestParameterManager, unittest.TestCase):
 class TestTotalOutParameter(TestParameterManager, unittest.TestCase):
     _ClassForTest = TotalOutParameter
     _acceptable_databases = [CloseLoopDataBase]
+    
+class UtilityGettingMessageFromParameterManager():
+    def __init__(self, ParameterManagerClass, DataBase):
+        self._prm = ParameterManagerClass()
+        self._db =DataBase()
+        self._validataion_class()
+    
+    def _validataion_class(self):
+        assert issubclass(self._prm.__class__, ParameterManager),\
+        'Parameter Manager class must be subclass of ParameterManager'
+        assert issubclass(self._db.__class__, IndivDataBase),\
+        'Parameter Manager class must be subclass of InidivDataBase'
+    
+    def get_message(self):
+        self._prm.set_type(self._db.index_val)
+        return self._prm.get_dataname()
 
 @add_msg
 class TestDataReader(UsingPNDataBase, unittest.TestCase):
@@ -1098,4 +1114,6 @@ class TestPhaseNoiseCalculator(UsingPNDataBase, unittest.TestCase):
     
 
 if __name__=='__main__':
+    print(ugm.get_message())
+
     unittest.main()

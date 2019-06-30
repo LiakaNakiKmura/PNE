@@ -28,7 +28,7 @@ class PNDataReader{
     +excute()
 }
 
-class PNPrmtrMng{
+class CommonParameter{
     +name getter
     +get_message()
 }
@@ -41,7 +41,7 @@ class PNDataBase{
 PNDataReader --up|> Transaction
 PNDataReader -right-> Reader
 PNDataReader --> PNDataBase
-PNDataReader --> PNPrmtrMng
+PNDataReader --> CommonParameter
 CSVIO -right-> PathAsk
 
 

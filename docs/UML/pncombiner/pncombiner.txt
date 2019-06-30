@@ -10,7 +10,7 @@ PNCombiner -ri-|> Transaction
 PNCombiner --> PNcalc
 PNCombiner --> PNDataWriter
 PNCombiner --> PNDataReader
-PNCombiner --> PNPrmtrMng
+PNCombiner --> CommonParameter
 
 class PNDataWriter{
 }
@@ -18,7 +18,7 @@ class PNDataReader{
 }
 class PNcalc{
 }
-class PNPrmtrMng
+class CommonParameter
 
 abstract class IndivDataBase{
     +index_freq

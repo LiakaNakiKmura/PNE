@@ -29,7 +29,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 # Target class
 from src.transaction.pncombiner import (PNCombiner,PNDataReader, PNDataWriter,
-                                        PNCalc, PNDataBase, PNPrmtrMng,
+                                        PNCalc, PNDataBase, CommonParameter,
                                         IndivDataBase, NoiseDataBase,
                                         TransferfuncDataBase, 
                                         CloseLoopDataBase,
@@ -126,7 +126,11 @@ class TestCombinePN(unittest.TestCase):
         for  mth in method_names:
             self.assertTrue(callable(getattr(PNDataBase, mth)))
 
-class _TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
+class TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
+    '''
+    Excute total Phase noise combining program.
+    '''
+    
     _db_prm_path_pairs=[[NoiseDataBase, RefParameter, 
                          'tests.dummy_data.data1.Ref.csv'],
                         [NoiseDataBase, VCOParameter,
@@ -150,9 +154,15 @@ class _TestCombinPN_Excution(UsingPNDataBase, unittest.TestCase):
         pass
     
     def _return_target_path(self):
+        '''
+        return thefunction.
+        '''
+        """
+        FIXME: This class should not know how to get the target from the 
+        message. Just some especially class should know the rule of message.
+        """
         def mock_path(msg):
             pass
-        pass
     
     def _make_msg_path_pairs(self):
         # Make matrix to search message and corresponded path.
@@ -638,7 +648,7 @@ class TestPNparameter(unittest.TestCase):
         Parameter is property, is string that is greater than 0 length and 
         cannot be changed.
         '''
-        pnpm = PNPrmtrMng()
+        pnpm = CommonParameter()
         
         pn = Parameter_Names()
         attrnames = pn.get_parameter_names()
@@ -659,7 +669,7 @@ class Parameter_Names():
     # Data kinds for database.
     
     def __init__(self):
-        self.pnpm = PNPrmtrMng()
+        self.pnpm = CommonParameter()
     
     def get_parameter_names(self):
         return self._names
@@ -1033,7 +1043,7 @@ class TestPhaseNoiseCalculator(UsingPNDataBase, unittest.TestCase):
         # Number of precise digit for test
     
     def _setupu_columns(self):
-        freq_column = PNPrmtrMng.index_freq        
+        freq_column = CommonParameter.index_freq        
         self._noise_columns = [freq_column, NoiseDataBase().index_val]
         self._tf_columns = [freq_column, TransferfuncDataBase().index_val]
         self._clsd_columns = [freq_column, CloseLoopDataBase().index_val]

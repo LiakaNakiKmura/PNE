@@ -107,7 +107,7 @@ class PhaseNoiseCalculator():
         self._read_column_name()
     
     def _read_column_name(self):
-        self._freq_column = PNPrmtrMng().index_freq
+        self._freq_column = CommonParameter().index_freq
         self._noise_column = NoiseDataBase().index_val
         self._tf_column = TransferfuncDataBase().index_val
         self._clsd_columns = [self._freq_column, 
@@ -185,22 +185,9 @@ class PNDataBase():
                              'total': 'total_data'})
 @read_only_getter_decorator({'noise':'Noise', 'tf':'TransferFunction', 
                              'combpn':'Combined Phase Noise'})
-class PNPrmtrMng():
+class CommonParameter():
     # FIXME: Refactoring to delete this class 
-    _reading_param_message_pairs = {
-            'ref':'Please input reference phase noise.', 
-            'vco':'Please input VCO phase noise.',
-            'pd':'Please input phase detector phase noise.',
-            'open_loop_gain':'Please input open loop gain data.'
-            }
-    _writing_param_message_pairs = {
-            'total':'Please write the total data'
-            }
     index_freq = 'frequency'
-    
-    read_setting = 'r'
-    write_setting = 'w'
-
 
 class IndivDataBase(metaclass = abc.ABCMeta):
     '''
@@ -263,7 +250,7 @@ class IndivDataBase(metaclass = abc.ABCMeta):
         new_data.columns = [self.index_freq, self.index_val]
         return (name, new_data)
 
-@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+@read_only_getter_decorator({'index_freq':CommonParameter.index_freq, 
                              'index_val':'Noise'})
 class NoiseDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_noise'
@@ -271,7 +258,7 @@ class NoiseDataBase(IndivDataBase):
     _getname_attr_for_pndb = 'get_noise_names'
 
 
-@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+@read_only_getter_decorator({'index_freq':CommonParameter.index_freq, 
                              'index_val':'Transfer function'})
 class TransferfuncDataBase(IndivDataBase):  
     _getter_attr_for_pndb = 'get_transfer_func' 
@@ -298,7 +285,7 @@ class TransferfuncDataBase(IndivDataBase):
         self.set_data(name, new_data)
 
 
-@read_only_getter_decorator({'index_freq':PNPrmtrMng.index_freq, 
+@read_only_getter_decorator({'index_freq':CommonParameter.index_freq, 
                              'index_val':'Close loop data'})
 class CloseLoopDataBase(IndivDataBase):
     _getter_attr_for_pndb = 'get_closeloop_noise'
@@ -361,7 +348,7 @@ class RefParameter(ParameterManager):
 @read_only_getter_decorator({'name':'VCO'})
 class VCOParameter(ParameterManager):
     _acceptable_databases = [NoiseDataBase, TransferfuncDataBase]
-
+    
 #@read_only_getter_decorator({'name':'total_data'})
 @read_only_getter_decorator({'name':'total out'})
 class TotalOutParameter(ParameterManager):

@@ -107,8 +107,13 @@ class DummyDataForTest():
         _dummy_data_file_name = 'test_csv_writer.csv'
         return str(module_path / dummy_data_foleder_name / _dummy_data_file_name)
 
+@add_msg
 class TestFixPathAskGenerater(unittest.TestCase):
     def test_generation(self):
+        '''
+        1. set dummy path
+        2. get class which return fixed path. 
+        '''
         dummy_path = self._get_dummy_path()
         fixpathgen = FixPathAskGenerater()
         fixpathgen.set_fixpath(dummy_path)
@@ -116,11 +121,48 @@ class TestFixPathAskGenerater(unittest.TestCase):
         
         self.assertTrue(issubclass(PathClass, PathAsk))
         pathclass = PathClass()
+        msg='Nothing'
         
-        self.assertEqual(dummy_path, pathclass.get_load_path())
-        self.assertEqual(dummy_path, pathclass.get_save_path())
+        self.assertEqual(dummy_path, pathclass.get_load_path(msg))
+        self.assertEqual(dummy_path, pathclass.get_save_path(msg))        
+
+    def test_init_set(self):
+        '''
+        1. set dummy path when instance is generated.
+        2. get class which return fixed path. 
+        '''
+        dummy_path = self._get_dummy_path()
+        fixpathgen = FixPathAskGenerater(dummy_path)
+        PathClass = fixpathgen.generate_class()
+        pathclass = PathClass()
+        msg='Nothing'
         
-    
+        self.assertEqual(dummy_path, pathclass.get_load_path(msg))
+        self.assertEqual(dummy_path, pathclass.get_save_path(msg)) 
+
+    def test_repeat_generation(self):
+        '''
+        Fixed path is static.
+        If reset dummy path and recreate, new class reflects new dummy path.
+        Old class' path doesn't be changed.
+        '''
+        dummy_path = self._get_dummy_path()
+        dummy_path2 = 'dummypath2'
+        fixpathgen = FixPathAskGenerater(dummy_path)
+        PathClass1 = fixpathgen.generate_class()
+        fixpathgen.set_fixpath(dummy_path2)
+        PathClass2 = fixpathgen.generate_class()
+        
+        pathclass1 = PathClass1()
+        pathclass2 = PathClass2()
+        msg='Nothing'
+        
+        self.assertEqual(dummy_path, pathclass1.get_load_path(msg))
+        self.assertEqual(dummy_path, pathclass1.get_save_path(msg))     
+        
+        self.assertEqual(dummy_path2, pathclass2.get_load_path(msg))
+        self.assertEqual(dummy_path2, pathclass2.get_save_path(msg))    
+        
     def _get_dummy_path(self):
         module_path = Path(os.path.abspath(__file__)).parent
         dummy_data_file_name = 'dummydata.txt'

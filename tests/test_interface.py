@@ -42,8 +42,7 @@ class TestCombinePN(TestForMethodExist, unittest.TestCase):
     _class_method_pairs=((Transaction,'execute'),
                          (Reader,'read'),
                          (Writer,'write'),
-                         (PathAsk,'get_load_path'),
-                         (PathAsk,'get_save_path'),
+                         (PathAsk,'get_path'),
                          (ValueAsk, 'get_value')
                          )
 

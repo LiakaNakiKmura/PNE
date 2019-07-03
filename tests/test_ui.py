@@ -26,7 +26,7 @@ from test_utility import (Inheration_test_base)
 # target class
 from src.dataio.cui import ValueAskCUI
 import src.dataio.csvio as csvio
-from src.dataio.io_com import (PathDialog)
+from src.dataio.io_com import (LoadPathDialog, SavePathDialog)
 from src.dataio.functional_ui import FixPathAskGenerater
 
 # interface
@@ -38,7 +38,8 @@ class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs =((ValueAskCUI, ValueAsk),
                            (csvio.CSVIO, Reader), 
-                           (PathDialog, PathAsk),
+                           (LoadPathDialog, PathAsk),
+                           (SavePathDialog, PathAsk),
                            (csvio.CSVIO, Writer)
                            )
 @add_msg
@@ -63,7 +64,8 @@ class Test_reading(unittest.TestCase):
     def test_data_reading(self):
         self.ddft=DummyDataForTest()
         dummy_path = self.ddft.get_dummy_read_data_path()
-        with patch('src.dataio.io_com.PathDialog.get_load_path')\
+        #with patch('src.dataio.io_com.PathDialog.get_load_path')\
+        with patch('src.dataio.io_com.LoadPathDialog.get_path')\
         as get_load_path_mock:
             get_load_path_mock.return_value = dummy_path
             cio = csvio.CSVIO()
@@ -76,7 +78,8 @@ class Test_writing(unittest.TestCase):
     def test_data_writing(self):
         self.ddft=DummyDataForTest()
         dummy_path = self.ddft.get_dummy_write_data_path()
-        with patch('src.dataio.io_com.PathDialog.get_save_path')\
+        #with patch('src.dataio.io_com.PathDialog.get_save_path')\
+        with patch('src.dataio.io_com.SavePathDialog.get_path')\
         as get_save_path_mock:
             get_save_path_mock.return_value = dummy_path
             cio = csvio.CSVIO()
@@ -123,8 +126,7 @@ class TestFixPathAskGenerater(unittest.TestCase):
         pathclass = PathClass()
         msg='Nothing'
         
-        self.assertEqual(dummy_path, pathclass.get_load_path(msg))
-        self.assertEqual(dummy_path, pathclass.get_save_path(msg))        
+        self.assertEqual(dummy_path, pathclass.get_path(msg))
 
     def test_init_set(self):
         '''
@@ -137,8 +139,7 @@ class TestFixPathAskGenerater(unittest.TestCase):
         pathclass = PathClass()
         msg='Nothing'
         
-        self.assertEqual(dummy_path, pathclass.get_load_path(msg))
-        self.assertEqual(dummy_path, pathclass.get_save_path(msg)) 
+        self.assertEqual(dummy_path, pathclass.get_path(msg))
 
     def test_repeat_generation(self):
         '''
@@ -157,11 +158,8 @@ class TestFixPathAskGenerater(unittest.TestCase):
         pathclass2 = PathClass2()
         msg='Nothing'
         
-        self.assertEqual(dummy_path, pathclass1.get_load_path(msg))
-        self.assertEqual(dummy_path, pathclass1.get_save_path(msg))     
-        
-        self.assertEqual(dummy_path2, pathclass2.get_load_path(msg))
-        self.assertEqual(dummy_path2, pathclass2.get_save_path(msg))    
+        self.assertEqual(dummy_path, pathclass1.get_path(msg))
+        self.assertEqual(dummy_path2, pathclass2.get_path(msg))
         
     def _get_dummy_path(self):
         module_path = Path(os.path.abspath(__file__)).parent

@@ -4,12 +4,15 @@ abstract class Transaction{
 }
 
 abstract class PathAsk{
-    +get_load_path()
+    +get_path()
 }
 
 
-class PathDialog{
-    +get_load_path()
+class LoadPathDialog{
+    +get_path()
+}
+class SavePathDialog{
+    +get_path()
 }
 
 PathDialog --up|> PathAsk

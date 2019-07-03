@@ -28,13 +28,9 @@ class Writer(metaclass = abc.ABCMeta):
         pass
 
 class PathAsk(metaclass = abc.ABCMeta):
-    # FIXME: Change Just get_path method
+    # FIXME: Change Just get_path method    
     @abc.abstractmethod
-    def get_load_path(self, message):
-        pass
-    
-    @abc.abstractmethod
-    def get_save_path(self, message):
+    def get_path(self, message):
         pass
 
 class ValueAsk(metaclass = abc.ABCMeta):

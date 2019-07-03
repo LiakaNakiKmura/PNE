@@ -15,20 +15,21 @@ from context import src # path setting
 
 # interface
 from src.interface.intfc_com import (Reader, Writer)
-from src.dataio.io_com import PathDialog
+from src.dataio.io_com import (LoadPathDialog, SavePathDialog)
 
 
 
 class CSVIO(Reader, Writer):
     def __init__(self):
         # TODO: Changalble to GUI interface.
-        self.path_dialog =  PathDialog()
+        self.load_path_dialog =  LoadPathDialog()
+        self.save_path_dialog =  SavePathDialog()
         
     def read(self, data_name):
         '''
         DataFrame is get from csv.
         '''
-        data_path = self.path_dialog.get_load_path(self._message(data_name))
+        data_path = self.load_path_dialog.get_path(self._message(data_name))
         return  pd.read_csv(data_path)
     
     def write(self, data_name, data_df):
@@ -36,7 +37,7 @@ class CSVIO(Reader, Writer):
         DataFrame is conversed to csv
         NO index.
         '''
-        data_path = self.path_dialog.get_save_path(self._message(data_name))
+        data_path = self.save_path_dialog.get_path(self._message(data_name))
         data_df.to_csv(data_path, index = False)
     
     def _message(self, data_name):

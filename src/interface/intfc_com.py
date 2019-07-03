@@ -28,6 +28,7 @@ class Writer(metaclass = abc.ABCMeta):
         pass
 
 class PathAsk(metaclass = abc.ABCMeta):
+    # FIXME: Change Just get_path method
     @abc.abstractmethod
     def get_load_path(self, message):
         pass

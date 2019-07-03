@@ -27,7 +27,7 @@ from test_utility import (Inheration_test_base)
 from src.dataio.cui import ValueAskCUI
 import src.dataio.csvio as csvio
 from src.dataio.io_com import (PathDialog)
-
+from src.dataio.functional_ui import FixPathAskGenerater
 
 # interface
 from src.interface.intfc_com import (ValueAsk)
@@ -37,10 +37,14 @@ from src.interface.intfc_com import (Reader, Writer, PathAsk)
 class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
     # Test inheration of interfaces.
     _sub_sup_class_pairs =((ValueAskCUI, ValueAsk),
+                           (csvio.CSVIO, Reader), 
+                           (PathDialog, PathAsk),
+                           (csvio.CSVIO, Writer)
                            )
 @add_msg
 class Test_CUI_ValueAsk(unittest.TestCase):
-    def test_data_reading(self):
+    def _test_data_reading(self):
+        # TODO: Activate
         self.vac = ValueAskCUI()
         if __name__=='__main__':
             '''
@@ -53,15 +57,6 @@ class Test_CUI_ValueAsk(unittest.TestCase):
             .format(inputval, self.vac.__class__)
             val = self.vac.get_value(msg)
             self.assertEqual(inputval, val)
-
-@add_msg
-class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
-    # Test inheration of interfaces.
-    _sub_sup_class_pairs =((csvio.CSVIO, Reader), 
-                           (PathDialog, PathAsk),
-                           (csvio.CSVIO, Writer)
-                           )
-
 
 @add_msg
 class Test_reading(unittest.TestCase):
@@ -111,7 +106,25 @@ class DummyDataForTest():
         dummy_data_foleder_name = 'dummy_data'
         _dummy_data_file_name = 'test_csv_writer.csv'
         return str(module_path / dummy_data_foleder_name / _dummy_data_file_name)
+
+class TestFixPathAskGenerater(unittest.TestCase):
+    def test_generation(self):
+        dummy_path = self._get_dummy_path()
+        fixpathgen = FixPathAskGenerater()
+        fixpathgen.set_fixpath(dummy_path)
+        PathClass = fixpathgen.generate_class()
         
+        self.assertTrue(issubclass(PathClass, PathAsk))
+        pathclass = PathClass()
+        
+        self.assertEqual(dummy_path, pathclass.get_load_path())
+        self.assertEqual(dummy_path, pathclass.get_save_path())
+        
+    
+    def _get_dummy_path(self):
+        module_path = Path(os.path.abspath(__file__)).parent
+        dummy_data_file_name = 'dummydata.txt'
+        return str(module_path / dummy_data_file_name)
 
 if __name__=='__main__':
     unittest.main()

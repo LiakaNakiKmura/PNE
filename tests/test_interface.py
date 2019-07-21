@@ -18,7 +18,7 @@ from context import src # path setting
 from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 from src.interface.intfc_com import (Transaction, Reader, Writer, PathAsk, 
-                                     ValueAsk)
+                                     ValueAsk, TF_Maker)
 
 class TestForMethodExist():
     '''
@@ -43,7 +43,8 @@ class TestCombinePN(TestForMethodExist, unittest.TestCase):
                          (Reader,'read'),
                          (Writer,'write'),
                          (PathAsk,'get_path'),
-                         (ValueAsk, 'get_value')
+                         (ValueAsk, 'get_value'),
+                         (TF_Maker, 'get_tf')
                          )
 
 if __name__=='__main__':

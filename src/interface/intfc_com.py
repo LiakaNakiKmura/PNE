@@ -37,3 +37,14 @@ class ValueAsk(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def get_value(self, message):
         pass
+    
+class TF_Maker(metaclass = abc.ABCMeta):
+    '''
+    This class make the transfer function (scipy.signal.lti).  
+    '''
+    @abc.abstractmethod
+    def get_tf(self):
+        '''
+        Return the transfer function class (scipy.signal.lti).  
+        '''
+        return None

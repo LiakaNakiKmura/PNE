@@ -44,8 +44,7 @@ class TestCSVIOInterfaces(Inheration_test_base,unittest.TestCase):
                            )
 @add_msg
 class Test_CUI_ValueAsk(unittest.TestCase):
-    def _test_data_reading(self):
-        # TODO: Activate
+    def test_data_reading(self):
         self.vac = ValueAskCUI()
         if __name__=='__main__':
             '''

@@ -34,6 +34,7 @@ class TestFilterTF(unittest.TestCase):
 
 class TestTimeDomainConv(unittest.TestCase):
     def test_a(self):
+        import matplotlib.pyplot as plt
         tau = 1e3
         tf = signal.TransferFunction([1],[1/tau, 1])
         # laplace trnasorm of  y = e^(t/1000)
@@ -48,6 +49,9 @@ class TestTimeDomainConv(unittest.TestCase):
         tdc.set_time_arry(t_in)
         t_out, y, x = tdc.get_td_data()
         #assert_array_almost_equal(y, td_func(t_out, u))
+        #plt.plot(t_out, td_func(t_out, u))
+        #plt.plot(t_out, y)
+        #FIXME
         
 
 

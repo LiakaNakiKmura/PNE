@@ -23,11 +23,10 @@ class TimeDomainConv():
     def set_tf(self, transfer_function):
         self.tf=transfer_function
         
-    def set_init_arry(self, u):
-        self._u = u
-        
     def set_time_arry(self, t):
         self._t = t
         
     def get_td_data(self):
-        return signal.lsim(self.tf, self._u, self._t)
+        # If signal.impulse2 is used. Result is numeric calculated. Therfore,
+        # there are slite difference to correct value.
+        return signal.impulse(self.tf, T = self._t)

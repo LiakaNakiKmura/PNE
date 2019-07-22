@@ -10,7 +10,7 @@ import unittest
 
 # 3rd party's module
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_allclose
 from pandas import DataFrame, Series
 from pandas.testing import assert_series_equal, assert_frame_equal
 from scipy import signal
@@ -33,27 +33,30 @@ class TestFilterTF(unittest.TestCase):
         self.assertTrue(issubclass(LCRLPF, TF_Maker))
 
 class TestTimeDomainConv(unittest.TestCase):
-    def test_a(self):
-        import matplotlib.pyplot as plt
-        tau = 1e3
-        tf = signal.TransferFunction([1],[1/tau, 1])
-        # laplace trnasorm of  y = e^(t/1000)
-        td_func = lambda t, u: np.exp(-t/tau)/tau*u
+    def test_step_responce(self):
+        tau = 1e-3
+        tf = signal.TransferFunction([1],[tau, 1, 0])
+        # This is the multiple of step function and Low pass fiter transfer 
+        # function. 1/s * 1/(1+tau*s)
+        
+        # laplace trnasorm of  y = u(t) - e^(t/tau). step response of LPF.
+        td_func = lambda t: 1 - np.exp(-t/tau)
         tdc = TimeDomainConv()
         
-        t_in = np.linspace(0, 1/tau)
-        u = np.ones_like(t_in)
+        t_in = np.linspace(0, tau)
         
         tdc.set_tf(tf)
-        tdc.set_init_arry(u)
         tdc.set_time_arry(t_in)
-        t_out, y, x = tdc.get_td_data()
-        #assert_array_almost_equal(y, td_func(t_out, u))
-        #plt.plot(t_out, td_func(t_out, u))
-        #plt.plot(t_out, y)
-        #FIXME
+        t_out, y= tdc.get_td_data()
         
-
+        '''
+        # Following is used for debug the data.
+        import matplotlib.pyplot as plt
+        plt.plot(t_out, td_func(t_out))
+        plt.plot(t_out, y)
+        '''
+        
+        assert_array_almost_equal(y, td_func(t_out), decimal=7)
 
 if __name__=='__main__':
     unittest.main()

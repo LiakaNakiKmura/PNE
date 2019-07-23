@@ -10,7 +10,7 @@ import unittest
 
 # 3rd party's module
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_allclose
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pandas import DataFrame, Series
 from pandas.testing import assert_series_equal, assert_frame_equal
 from scipy import signal
@@ -24,14 +24,51 @@ from src.interface.intfc_com import TF_Maker
 from src.calc.transfer_function import LCRLPF
 from src.calc.transfer_function import TimeDomainConv
 
-
-class TestFilterTF(unittest.TestCase):
+@add_msg
+class TestFilTF():
     '''
     This is the test for transfer function. Filters for PLL.
     '''
+    TargetClass = TF_Maker
+    parameter = {'C':1e6, 'L': 10e6, 'R':100}
+    den = np.array([])
+    num = np.array([])
+    
+    def setUp(self):
+        self._reshape_num_den()
+    
     def test_inheratance(self):
-        self.assertTrue(issubclass(LCRLPF, TF_Maker))
+        self.assertTrue(issubclass(self.TargetClass, TF_Maker))
+    
+    def test_get_transferfunction(self):
+        target = self.TargetClass()
+        target.set_parameter(**self.parameter)
+        lti = target.get_tf()
+        assert_array_equal(lti.den, self.den)
+        assert_array_equal(lti.num, self.num)
+    
+    def _reshape_num_den(self):
+        norm = self.den[0]
+        self.den =self.den/norm
+        self.num =self.num/norm
 
+@add_msg
+class TestLCRLPF(TestFilTF, unittest.TestCase):
+    TargetClass = LCRLPF
+    
+    C = 1e6 #[pF]
+    L = 10e6 #[uH]
+    R = 100 #[Ohm]
+    parameter = {'C':C, 'L': L, 'R':R}
+    num = np.array([1])
+    den = np.array([L*1e-6*C*1e-12, R*C*1e-12, 1])
+    del(C)
+    del(L)
+    del(R)
+
+    
+        
+@add_msg
 class TestTimeDomainConv(unittest.TestCase):
     def test_step_responce(self):
         tau = 1e-3
@@ -57,6 +94,7 @@ class TestTimeDomainConv(unittest.TestCase):
         '''
         
         assert_array_almost_equal(y, td_func(t_out), decimal=7)
+        
 
 if __name__=='__main__':
     unittest.main()

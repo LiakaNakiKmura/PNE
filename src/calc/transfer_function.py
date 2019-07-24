@@ -50,6 +50,25 @@ class LCRLPF(FilterTF):
 
 class UnitManger():
     _kinds_num_pairs = {'R':1, 'L':1e-6, 'C':1e-12}
+    _prefix = {'y': 1e-24,  # yocto
+               'z': 1e-21,  # zepto
+               'a': 1e-18,  # att
+               'f': 1e-15,  # femto
+               'p': 1e-12,  # pico
+               'n': 1e-9,   # nano
+               'u': 1e-6,   # micro
+               'm': 1e-3,   # mili
+               'c': 1e-2,   # centi
+               'd': 1e-1,   # deci
+               'k': 1e3,    # kilo
+               'M': 1e6,    # mega
+               'G': 1e9,    # giga
+               'T': 1e12,   # tera
+               'P': 1e15,   # pet
+               'E': 1e18,   # exa
+               'Z': 1e21,   # zetta
+               'Y': 1e24,   # yotta
+               }
     def get_prefix_num(self, kinds):
         return self._kinds_num_pairs[kinds]
 

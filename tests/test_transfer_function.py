@@ -21,8 +21,7 @@ from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
 # Target class
 from src.interface.intfc_com import TF_Maker
-from src.calc.transfer_function import LCRLPF
-from src.calc.transfer_function import TimeDomainConv
+from src.calc.transfer_function import LCRLPF, UnitManger, TimeDomainConv
 
 @add_msg
 class TestFilTF():
@@ -62,12 +61,9 @@ class TestLCRLPF(TestFilTF, unittest.TestCase):
     parameter = {'C':C, 'L': L, 'R':R}
     num = np.array([1])
     den = np.array([L*1e-6*C*1e-12, R*C*1e-12, 1])
-    del(C)
-    del(L)
-    del(R)
+    for p in [C, L, R]:
+        del(p)
 
-    
-        
 @add_msg
 class TestTimeDomainConv(unittest.TestCase):
     def test_step_responce(self):
@@ -95,6 +91,15 @@ class TestTimeDomainConv(unittest.TestCase):
         
         assert_array_almost_equal(y, td_func(t_out), decimal=7)
         
+@add_msg
+class TestUnitManager(unittest.TestCase):
+    def setUp(self):
+        self.um = UnitManger()
+    
+    def test_get_prefix_num(self):
+        kinds_var_pairs = {'R':1, 'L': 1e-6, 'C': 1e-12}
+        for kind, var in kinds_var_pairs.items():
+            self.assertEqual(self.um.get_prefix_num(kind), var)
 
 if __name__=='__main__':
     unittest.main()

@@ -1,0 +1,51 @@
+@startuml
+abstract class Transaction{
+    +excute()
+}
+
+abstract class PathAsk{
+    +get_path()
+}
+
+
+class LoadPathDialog{
+    +get_path()
+}
+class SavePathDialog{
+    +get_path()
+}
+
+PathDialog --up|> PathAsk
+
+abstract class Reader{
+    +read()
+}
+
+class CSVIO{
+    +read(message)
+}
+
+CSVIO --up|> Reader
+
+class PNDataReader{
+    +excute()
+}
+
+class CommonParameter{
+    +name getter
+    +get_message()
+}
+
+class PNDataBase{
+    <<singleton>>
+    +set_noise()
+}
+
+PNDataReader --up|> Transaction
+PNDataReader -right-> Reader
+PNDataReader --> PNDataBase
+PNDataReader --> CommonParameter
+CSVIO -right-> PathAsk
+
+
+@enduml

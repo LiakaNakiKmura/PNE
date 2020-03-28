@@ -7,39 +7,41 @@ abstract class Transaction{
 class PNCombiner
 PNCombiner -ri-|> Transaction
 
-abstract class Writer{
-    +write()
+PNCombiner --> PNcalc
+PNCombiner --> PNDataWriter
+PNCombiner --> PNDataReader
+PNCombiner --> CommonParameter
+
+class PNDataWriter{
 }
-abstract class Reader{
-    +read()
+class PNDataReader{
 }
-abstract class PN_TF_Calc{
-    +calc()
+class PNcalc{
+}
+class CommonParameter
+
+abstract class IndivDataBase{
+    +index_freq
+    +index_val
+    +get_data(name)
+    +set_data(name, data)
+    +get_names()
 }
 
-PNCombiner --> Writer
-PNCombiner --> Reader
-PNCombiner --> PN_TF_Calc
-
-class PNDataWriter
-class PNDataReader
-class PNcalc
-
-PNDataWriter --up|> Writer
-PNDataReader --up|> Reader
-PNcalc --up|> PN_TF_Calc
+PNDataWriter --up|> Transaction
+PNDataReader --up|> Transaction
+PNcalc --up|> Transaction
 
 class PNDataBase{
     <<singleton>>
-    +set_noise(name, freq_nosie_pairas, transfer_func)
-    +get_noise(name)
-    +set_open-loop(open_loop)
-    +get_noise()
-    +set_total_pn(phase_noise)
-    +get_total_pn()
 }
-PNDataWriter -ri> PNDataBase
-PNDataReader -ri> PNDataBase
-PNcalc -ri> PNDataBase
+PNDataWriter --do> PNDataBase
+PNDataReader --do> PNDataBase
+PNcalc --do> IndivDataBase
+IndivDataBase --ri> PNDataBase
+
+NoiseDataBase -up-|> IndivDataBase
+TransferfuncDataBase -up-|> IndivDataBase
+CloseLoopDataBase -up-|> IndivDataBase
 
 @enduml

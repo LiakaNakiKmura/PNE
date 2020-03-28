@@ -85,6 +85,7 @@ ENV/
 
 # Spyder project settings
 .spyderproject
+.spyproject
 
 # Rope project settings
 .ropeproject
@@ -92,3 +93,6 @@ ENV/
 # Showing Tree tool
 tree_show.bat
 treelist.txt
+
+# Dummy data making file
+.makingdata

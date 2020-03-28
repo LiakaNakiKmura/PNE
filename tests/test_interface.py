@@ -15,25 +15,37 @@ from unittest.mock import patch
 
 # Original module  
 from context import src # path setting
-from test_utility.unittest_util import cls_startstop_msg as add_msg
+from testing_utility.unittest_util import cls_startstop_msg as add_msg
 
-from src.interface.common import (Transaction, Reader, Writer)
-from src.interface.calc_data import (PN_TF_Calc)
+from src.interface.intfc_com import (Transaction, Reader, Writer, PathAsk, 
+                                     ValueAsk, TF_Maker)
+
+class TestForMethodExist():
+    '''
+    Check that class has specified method for especially abstract class.
+    _class_method_pairs is set as ((class1, mrthod1),(class2, method2)...)
+    _class_attr_pairs is set as ((class1, attribute1),(class2, attribute2)...)
+    '''
+    _class_method_pairs =(())
+    _class_attr_pairs = (())
+    
+    def test_class_method_pairs(self):
+        for cl, mth in self._class_method_pairs:
+            self.assertTrue(callable(getattr(cl, mth)))
+    
+    def test_class_attr_pairs(self):
+        for cl, attr in self._class_attr_pairs:
+            self.assertTrue(hasattr(cl, attr))
 
 @add_msg
-class TestCombinePN(unittest.TestCase):
-    """
-    Test for interface
-    """
-    def test_interface_method(self):
-        # Test interface has abstract method.
-        class_method_pairs=((Transaction,'execute'),
-                            (Reader,'read'),
-                            (Writer,'write'),
-                            (PN_TF_Calc,'calc')                         
-                            )
-        for cl, mth in class_method_pairs:
-            self.assertTrue(callable(getattr(cl, mth)))
+class TestCombinePN(TestForMethodExist, unittest.TestCase):
+    _class_method_pairs=((Transaction,'execute'),
+                         (Reader,'read'),
+                         (Writer,'write'),
+                         (PathAsk,'get_path'),
+                         (ValueAsk, 'get_value'),
+                         (TF_Maker, 'get_tf')
+                         )
 
 if __name__=='__main__':
     unittest.main()

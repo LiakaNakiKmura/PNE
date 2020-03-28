@@ -1,6 +1,9 @@
 sudo: false
 language: python
-install: pip install sphinx
+python:
+  - 3.6
+install: 
+  - pip install pandas
+  - pip install scipy
 script: 
-- make doctest
-- make html
+- python -m unittest discover -s tests

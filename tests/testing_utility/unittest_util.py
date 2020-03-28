@@ -64,27 +64,3 @@ if __name__ == '__main__':
     #  ----------test_B is started----------
     # B
     # ----------test_B ie completed----------
-
-import matplotlib.pyplot as plt
-class ShowBodePlot(object):
-    def __init__(self):
-        self._freq = None
-        self._dB = None
-    
-    def set_freq(self,freq):
-        self._freq = freq
-    
-    def set_transfunc(self, tf):
-        w, self._dB, self._phase =tf.bode(self._freq)
-    
-    def set_dB(self, dB):
-        self._dB = dB
-        
-    def showplot(self):
-        plt.figure(1)
-        plt.subplot(211)
-        plt.semilogx(self._freq, self._mag)
-        plt.ylabel("Amplitude")
-        plt.axis("tight")
-        plt.xlim( 1, 1e9)
-        plt.show()

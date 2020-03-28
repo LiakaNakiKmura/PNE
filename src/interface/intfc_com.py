@@ -12,39 +12,15 @@ import abc
 
 # Original module  
 
-class Transaction(metaclass = abc.ABCMeta):
+class Parts(metaclass = abc.ABCMeta):
     @abc.abstractmethod
-    def execute(self):
-        pass
-
-class Reader(metaclass = abc.ABCMeta):
-    @abc.abstractmethod
-    def read(self, message):
+    def get_data(self):
         pass
     
-class Writer(metaclass = abc.ABCMeta):
     @abc.abstractmethod
-    def write(self, message, data):
-        pass
-
-class PathAsk(metaclass = abc.ABCMeta):
-    # FIXME: Change Just get_path method    
-    @abc.abstractmethod
-    def get_path(self, message):
-        pass
-
-class ValueAsk(metaclass = abc.ABCMeta):
-    @abc.abstractmethod
-    def get_value(self, message):
+    def set_data(self):
         pass
     
-class TF_Maker(metaclass = abc.ABCMeta):
-    '''
-    This class make the transfer function (scipy.signal.lti).  
-    '''
     @abc.abstractmethod
-    def get_tf(self):
-        '''
-        Return the transfer function class (scipy.signal.lti).  
-        '''
-        return None
+    def get_parameter_name(self):
+        pass
